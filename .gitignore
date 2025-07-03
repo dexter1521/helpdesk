@@ -1,0 +1,295 @@
+# ====================
+# GITIGNORE PARA HELPDESKZ CON DOCKER
+# ====================
+
+# ====================================
+# ARCHIVOS DE CONFIGURACIÓN SENSIBLES
+# ====================================
+.env
+.env.local
+.env.production
+.env.staging
+config.local.php
+config.production.php
+
+# Archivos de configuración de HelpDeskZ con datos sensibles
+hdz/app/Config/Database.php
+hdz/app/Config/Helpdesk.php
+
+# ====================================
+# DOCKER & CONTENEDORES
+# ====================================
+# Logs de Docker
+docker-compose.override.yml
+.docker/
+docker-compose.prod.yml
+
+# Volúmenes y datos persistentes
+mysql_data/
+postgres_data/
+
+# ====================================
+# BASE DE DATOS
+# ====================================
+# Backups de base de datos
+*.sql.gz
+*.sql.bak
+backup_*.sql
+dump_*.sql
+
+# Archivos temporales de MySQL
+*.err
+*.log
+mysql-bin.*
+*.relay-log.*
+
+# ====================================
+# ARCHIVOS SUBIDOS Y TEMPORALES
+# ====================================
+# Archivos subidos por usuarios
+hdz/writable/uploads/*
+!hdz/writable/uploads/index.html
+!hdz/writable/uploads/.htaccess
+
+# Archivos adjuntos
+hdz/writable/attachments/*
+!hdz/writable/attachments/index.html
+!hdz/writable/attachments/.htaccess
+
+upload/*
+!upload/index.html
+!upload/thumbs/
+upload/thumbs/*
+!upload/thumbs/index.html
+
+# ====================================
+# CACHE Y LOGS
+# ====================================
+# Cache de la aplicación
+hdz/writable/cache/*
+!hdz/writable/cache/index.html
+!hdz/writable/cache/.htaccess
+
+# Logs de la aplicación
+hdz/writable/logs/*
+!hdz/writable/logs/index.html
+!hdz/writable/logs/.htaccess
+
+# Sesiones
+hdz/writable/session/*
+!hdz/writable/session/index.html
+!hdz/writable/session/.htaccess
+
+# Debug bar
+hdz/writable/debugbar/*
+!hdz/writable/debugbar/index.html
+
+# Mails temporales
+hdz/writable/mails/*
+!hdz/writable/mails/index.html
+
+# ====================================
+# DEPENDENCIAS Y VENDOR
+# ====================================
+# Composer
+hdz/vendor/
+composer.phar
+auth.json
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ====================================
+# SISTEMAS OPERATIVOS
+# ====================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ====================================
+# EDITORES E IDEs
+# ====================================
+# Visual Studio Code
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/.ropeproject
+
+# PhpStorm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ====================================
+# ARCHIVOS TEMPORALES
+# ====================================
+# Archivos temporales generales
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+
+# Archivos de log generales
+*.log
+*.out
+*.pid
+
+# ====================================
+# DESARROLLO Y TESTING
+# ====================================
+# PHPUnit
+.phpunit.result.cache
+phpunit.xml
+tests/_output/
+tests/_support/_generated/
+
+# Coverage reports
+coverage/
+clover.xml
+.coverage
+
+# ====================================
+# COMPILACIÓN Y BUILD
+# ====================================
+# Archivos compilados
+*.compiled
+*.min.js
+*.min.css
+
+# Build artifacts
+build/
+dist/
+
+# ====================================
+# ARCHIVOS DE CONFIGURACIÓN LOCAL
+# ====================================
+# Configuraciones locales específicas
+local.php
+development.php
+testing.php
+
+# Archivos de configuración de servidor web
+.htaccess.local
+nginx.local.conf
+apache.local.conf
+
+# ====================================
+# SEGURIDAD
+# ====================================
+# Claves y certificados
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+
+# Archivos de configuración con credenciales
+credentials.json
+secrets.json
+
+# ====================================
+# HERRAMIENTAS DE DESARROLLO
+# ====================================
+# Vagrant
+.vagrant/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# ====================================
+# MANTENER ARCHIVOS ESENCIALES
+# ====================================
+# Mantener archivos index.html de seguridad
+!index.html
+!*/index.html
+
+# Mantener archivos .htaccess importantes
+!.htaccess
+!*/.htaccess
+
+# Mantener archivos de configuración base (sin datos sensibles)
+!hdz/app/Config/App.php
+!hdz/app/Config/Autoload.php

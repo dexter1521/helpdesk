@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: helpdesk_web
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+      - ./php.ini:/usr/local/etc/php/php.ini
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_NAME=helpdesk
+      - DB_USER=helpdesk_user
+      - DB_PASSWORD=helpdesk_password
+    networks:
+      - helpdesk_network
+
+  db:
+    image: mysql:8.0
+    container_name: helpdesk_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: helpdesk
+      MYSQL_USER: helpdesk_user
+      MYSQL_PASSWORD: helpdesk_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
+      - ./mysql/helpdeskz.sql:/docker-entrypoint-initdb.d/helpdeskz.sql
+    networks:
+      - helpdesk_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: helpdesk_phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: helpdesk_user
+      PMA_PASSWORD: helpdesk_password
+    ports:
+      - "8081:80"
+    depends_on:
+      - db
+    networks:
+      - helpdesk_network
+
+volumes:
+  mysql_data:
+
+networks:
+  helpdesk_network:
+    driver: bridge
