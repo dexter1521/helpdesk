@@ -63,6 +63,12 @@ HelpDeskZ es un software gratuito basado en PHP que permite gestionar el soporte
 - **Personal/Staff:** `http://localhost:8080/staff`
 - **Admin:** `http://localhost:8080/staff` (usar credenciales de admin)
 
+### Funcionalidades destacadas
+- **Importación masiva de usuarios:** Sube archivos Excel (.xlsx, .xls) o CSV para crear múltiples usuarios
+- **Gestión de tickets y departamentos**
+- **Base de conocimientos integrada**
+- **API REST para integraciones**
+
 ---
 
 ## 📦 Dependencias del Proyecto
@@ -74,6 +80,7 @@ Este proyecto utiliza **Composer** para gestionar las siguientes dependencias:
 - `ezyang/htmlpurifier` - Sanitización de contenido HTML
 - `zbateson/mail-mime-parser` - Análisis de emails
 - `chillerlan/php-qrcode` - Generación de códigos QR
+- `phpoffice/phpspreadsheet` - Lectura y escritura de archivos Excel
 
 **Nota:** El directorio `hdz/vendor/` no está incluido en Git y debe instalarse con `composer install`.
 

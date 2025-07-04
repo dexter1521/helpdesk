@@ -34,6 +34,9 @@ echo form_open('',['id'=>'manageForm'],['do'=>'remove']).
                     <h6 class="m-0"><?php echo lang('Admin.form.manage');?></h6>
                 </div>
                 <div class="col text-md-right">
+                    <a href="<?php echo site_url('staff/users/import'); ?>" class="btn btn-success btn-sm mr-2">
+                        <i class="fa fa-upload"></i> Importar Usuarios
+                    </a>
                     <a href="<?php echo site_url(route_to('staff_users_new'));?>" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> <?php echo lang('Admin.users.newUser');?></a>
                 </div>
             </div>

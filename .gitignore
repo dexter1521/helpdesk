@@ -293,3 +293,9 @@ secrets.json
 # Mantener archivos de configuración base (sin datos sensibles)
 !hdz/app/Config/App.php
 !hdz/app/Config/Autoload.php
+
+# ====================================
+# Personalizados
+# ====================================
+vendor/
+node_modules/

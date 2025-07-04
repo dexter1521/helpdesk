@@ -205,6 +205,12 @@ $routes->group(Helpdesk::STAFF_URI, [
     $routes->add('users/new','Staff\Users::newAccount',[
         'as' => 'staff_users_new'
     ]);
+    $routes->add('users/import','Staff\Users::importUsers',[
+        'as' => 'staff_users_import'
+    ]);
+    $routes->add('users/download-template','Staff\Users::downloadTemplate',[
+        'as' => 'staff_users_template'
+    ]);
     $routes->add('users/edit/(:num)','Staff\Users::editAccount/$1',[
         'as' => 'staff_users_edit'
     ]);

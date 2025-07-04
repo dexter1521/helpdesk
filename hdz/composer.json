@@ -1,10 +1,11 @@
 {
-  "name": "EvolutionScript",
+  "name": "evolutionscript/helpdeskz",
   "require": {
     "google/recaptcha": "~1.2",
-    "php-imap/php-imap": "4.1.0",
-    "ezyang/htmlpurifier": "4.13",
-    "zbateson/mail-mime-parser": "1.3.1",
-    "chillerlan/php-qrcode": "3.4.0"
+    "php-imap/php-imap": "^5.0",
+    "ezyang/htmlpurifier": "^4.15",
+    "zbateson/mail-mime-parser": "^2.0",
+    "chillerlan/php-qrcode": "^4.0",
+    "phpoffice/phpspreadsheet": "^1.28"
   }
 }
