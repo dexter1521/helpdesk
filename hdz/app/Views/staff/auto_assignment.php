@@ -31,7 +31,8 @@ if(isset($success_msg)){
                 <h5 class="m-0">Configuración de Asignación Automática</h5>
             </div>
             <div class="card-body">
-                <?php echo form_open('', [], ['do' => 'update_settings']); ?>
+                <form method="post" action="">
+                    <input type="hidden" name="do" value="update_settings">
                 
                 <div class="form-group">
                     <label>Estado de Asignación Automática</label>
@@ -70,7 +71,7 @@ if(isset($success_msg)){
                     </button>
                 </div>
                 
-                <?php echo form_close(); ?>
+                </form>
             </div>
         </div>
     </div>

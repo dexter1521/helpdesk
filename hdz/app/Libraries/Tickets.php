@@ -611,14 +611,41 @@ class Tickets
         $staff_departments = $staff->getDepartments();
         $search_department = false;
 
+        // Verificar si la auto-asignación está habilitada  
+        $autoAssignment = new \App\Libraries\AutoAssignment();
+        $autoAssignmentEnabled = true; // FORZAR TEMPORALMENTE PARA DEBUG
+        
+        // DEBUG: Log para verificar qué está pasando
+        log_message('debug', "staffTickets DEBUG - Staff ID: " . $staff->getData('id') . ", Admin: " . $staff->getData('admin') . ", AutoAssignment: " . ($autoAssignmentEnabled ? 'TRUE' : 'FALSE'));
+        
+        // Solo aplicar filtro si NO es admin
+        if($autoAssignmentEnabled && $staff->getData('admin') == 0){
+            // Con auto-asignación, los agentes SOLO ven tickets asignados específicamente a ellos
+            $this->ticketsModel->where('tickets.staff_id', $staff->getData('id'));
+            log_message('debug', "staffTickets DEBUG - Aplicando filtro auto-assignment para staff " . $staff->getData('id'));
+        } elseif (!$autoAssignmentEnabled) {
+            // Lógica tradicional: filtrar solo por departamentos (solo si no hay búsqueda específica)
+            if(!$search_department){
+                $this->ticketsModel->groupStart();
+                foreach ($staff_departments as $item){
+                    $this->ticketsModel->orWhere('tickets.department_id', $item->id);
+                }
+                $this->ticketsModel->groupEnd();
+            }
+            log_message('debug', "staffTickets DEBUG - Aplicando filtro tradicional por departamentos");
+        } else {
+            log_message('debug', "staffTickets DEBUG - Admin detectado, sin filtros");
+        }
+        // Si es admin Y auto-assignment está habilitado, NO aplicar ningún filtro (ve todo)
+
         switch($page){
             case 'search':
                 if($request->getGet('department')){
                     $key = array_search($request->getGet('department'), array_column($staff_departments, 'id'));
                     if(is_numeric($key)){
                         $this->ticketsModel->where('tickets.department_id', $staff_departments[$key]->id);
+                        $search_department = true;
                     }
-                    $search_department = true;
                 }
 
                 if($request->getGet('keyword') != ''){
@@ -681,14 +708,6 @@ class Tickets
                     ->orWhere('tickets.status', 4)
                     ->groupEnd();
                 break;
-        }
-
-        if(!$search_department){
-            $this->ticketsModel->groupStart();
-            foreach ($staff_departments as $item){
-                $this->ticketsModel->orWhere('tickets.department_id', $item->id);
-            }
-            $this->ticketsModel->groupEnd();
         }
 
         if($request->getGet('sort')){

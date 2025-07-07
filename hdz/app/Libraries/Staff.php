@@ -17,9 +17,13 @@ class Staff
     private $staffModel;
     private $is_online=null;
     private $staff_departments;
+    private $user_data;
+    private $db;
+    
     public function __construct()
     {
         $this->staffModel = new \App\Models\Staff();
+        $this->db = Database::connect();
     }
     public function isOnline()
     {
@@ -274,7 +278,9 @@ class Staff
     {
         $this->staffModel->protect(false);
         $departments = is_array($departments) ? $departments : array();
-        $this->staffModel->insert([
+        
+        // Insert staff record
+        $staffId = $this->staffModel->insert([
             'fullname' => esc($fullname),
             'username' => $username,
             'email' => $email,
@@ -285,13 +291,23 @@ class Staff
             'active' => $active
         ]);
         $this->staffModel->protect(true);
-        return $this->staffModel->getInsertID();
+        
+        // Sync with auto-assignment tables if agent is not admin and has departments
+        if (!empty($departments) && $admin == 0) {
+            $this->syncStaffDepartments($staffId, $departments);
+        }
+        
+        return $staffId;
     }
 
     public function updateAgent($id, $fullname, $username, $email, $password, $admin=0, $departments='', $active=1)
     {
         $this->staffModel->protect(false);
         $departments = is_array($departments) ? $departments : array();
+        
+        // Get current agent data to compare admin status
+        $currentAgent = $this->getRow(['id' => $id]);
+        
         if($password != ''){
             $this->staffModel->set('password', password_hash($password, PASSWORD_BCRYPT));
         }
@@ -303,13 +319,29 @@ class Staff
             'department' => serialize($departments),
             'active' => $active
         ])->update($id);
-        $this->staffModel->protect(false);
+        $this->staffModel->protect(true);
+        
+        // Sync with auto-assignment tables
+        // Remove old assignments first
+        $this->removeStaffDepartments($id);
+        
+        // Add new assignments if agent is not admin and has departments
+        if (!empty($departments) && $admin == 0) {
+            $this->syncStaffDepartments($id, $departments);
+        }
+        
         return true;
     }
 
     public function removeAgent($id)
     {
+        // Remove from auto-assignment tables first
+        $this->removeStaffDepartments($id);
+        
+        // Remove from main staff table
         $this->staffModel->delete($id);
+        
+        // Clean up login logs
         $db = Database::connect();
         $db->table('login_log')
             ->where('staff_id', $id)
@@ -391,5 +423,41 @@ class Staff
         $r = $q->result();
         $q->free_result();
         return $r;
+    }
+
+    /**
+     * Sync staff departments with auto-assignment tables
+     */
+    private function syncStaffDepartments($staffId, $departments)
+    {
+        $db = Database::connect();
+        
+        foreach ($departments as $departmentId) {
+            // Insert into hdzfv_staff_departments with default weight
+            $db->table('staff_departments')->insert([
+                'staff_id' => $staffId,
+                'department_id' => $departmentId,
+                'active' => 1,
+                'priority_weight' => 1
+            ]);
+        }
+    }
+
+    /**
+     * Remove staff department assignments from auto-assignment tables
+     */
+    private function removeStaffDepartments($staffId)
+    {
+        $db = Database::connect();
+        
+        // Remove from staff_departments table
+        $db->table('staff_departments')
+            ->where('staff_id', $staffId)
+            ->delete();
+        
+        // Remove from department_assignments table (assignment history)
+        $db->table('department_assignments')
+            ->where('staff_id', $staffId)
+            ->delete();
     }
 }

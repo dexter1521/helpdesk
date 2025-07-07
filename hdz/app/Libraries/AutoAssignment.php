@@ -158,18 +158,35 @@ class AutoAssignment
         $query = "
             SELECT DISTINCT s.id, s.fullname, s.username, s.email
             FROM hdzfv_staff s
-            LEFT JOIN hdzfv_staff_departments sd ON s.id = sd.staff_id
+            INNER JOIN hdzfv_staff_departments sd ON s.id = sd.staff_id
             WHERE s.active = 1 
-            AND (
-                s.admin = 1 
-                OR (sd.department_id = ? AND sd.active = 1)
-                OR NOT EXISTS (SELECT 1 FROM hdzfv_staff_departments WHERE staff_id = s.id)
-            )
+            AND sd.department_id = ? 
+            AND sd.active = 1
             ORDER BY s.fullname ASC
         ";
         
         $result = $this->db->query($query, [$department_id]);
-        return $result->getResultArray();
+        $staff_list = $result->getResultArray();
+        
+        // Si no hay agentes específicos configurados, usar agentes con acceso general al departamento
+        if (empty($staff_list)) {
+            $query_fallback = "
+                SELECT DISTINCT s.id, s.fullname, s.username, s.email
+                FROM hdzfv_staff s
+                WHERE s.active = 1 
+                AND s.admin = 0
+                AND (
+                    s.department LIKE '%\"$department_id\"%'
+                    OR s.department = ''
+                )
+                ORDER BY s.fullname ASC
+            ";
+            
+            $result = $this->db->query($query_fallback);
+            $staff_list = $result->getResultArray();
+        }
+        
+        return $staff_list;
     }
     
     /**
@@ -181,18 +198,35 @@ class AutoAssignment
             SELECT DISTINCT s.id, s.fullname, s.username, s.email,
                    COALESCE(sd.priority_weight, 1) as weight
             FROM hdzfv_staff s
-            LEFT JOIN hdzfv_staff_departments sd ON s.id = sd.staff_id AND sd.department_id = ?
+            INNER JOIN hdzfv_staff_departments sd ON s.id = sd.staff_id
             WHERE s.active = 1 
-            AND (
-                s.admin = 1 
-                OR (sd.department_id = ? AND sd.active = 1)
-                OR NOT EXISTS (SELECT 1 FROM hdzfv_staff_departments WHERE staff_id = s.id)
-            )
+            AND sd.department_id = ? 
+            AND sd.active = 1
             ORDER BY weight DESC, s.fullname ASC
         ";
         
-        $result = $this->db->query($query, [$department_id, $department_id]);
-        return $result->getResultArray();
+        $result = $this->db->query($query, [$department_id]);
+        $staff_list = $result->getResultArray();
+        
+        // Si no hay agentes específicos configurados, usar agentes con acceso general al departamento
+        if (empty($staff_list)) {
+            $query_fallback = "
+                SELECT DISTINCT s.id, s.fullname, s.username, s.email, 1 as weight
+                FROM hdzfv_staff s
+                WHERE s.active = 1 
+                AND s.admin = 0
+                AND (
+                    s.department LIKE '%\"$department_id\"%'
+                    OR s.department = ''
+                )
+                ORDER BY s.fullname ASC
+            ";
+            
+            $result = $this->db->query($query_fallback);
+            $staff_list = $result->getResultArray();
+        }
+        
+        return $staff_list;
     }
     
     /**
@@ -239,7 +273,26 @@ class AutoAssignment
      */
     public function isAutoAssignmentEnabled()
     {
-        return (bool) $this->settings->config('auto_assignment');
+        // Verificar en la tabla config (forma principal)
+        $query = "SELECT auto_assignment FROM hdzfv_config WHERE id = 1";
+        $result = $this->db->query($query);
+        
+        if ($result->getNumRows() > 0) {
+            $row = $result->getRow();
+            return (bool) $row->auto_assignment;
+        }
+        
+        // Fallback: verificar en settings si no existe en config
+        $query = "SELECT value FROM hdzfv_settings WHERE var = 'auto_assignment_enabled'";
+        $result = $this->db->query($query);
+        
+        if ($result->getNumRows() > 0) {
+            $row = $result->getRow();
+            return (bool) $row->value;
+        }
+        
+        // Si no encuentra nada, asumir deshabilitado
+        return false;
     }
     
     /**
@@ -247,7 +300,15 @@ class AutoAssignment
      */
     public function getAssignmentMethod()
     {
-        return $this->settings->config('auto_assignment_method') ?: 'balanced';
+        $query = "SELECT auto_assignment_method FROM hdzfv_config WHERE id = 1";
+        $result = $this->db->query($query);
+        
+        if ($result->getNumRows() > 0) {
+            $row = $result->getRow();
+            return $row->auto_assignment_method ?: 'balanced';
+        }
+        
+        return 'balanced';
     }
     
     /**

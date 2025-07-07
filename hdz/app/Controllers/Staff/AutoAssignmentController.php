@@ -41,7 +41,7 @@ class AutoAssignmentController extends BaseController
             return redirect()->route('staff_dashboard');
         }
 
-        if($this->request->getPost('do') == 'update_settings'){
+        if($this->request->getMethod() === 'post' && $this->request->getPost('do') == 'update_settings'){
             $validation = Services::validation();
             $validation->setRules([
                 'auto_assignment' => 'required|in_list[0,1]',
@@ -67,10 +67,21 @@ class AutoAssignmentController extends BaseController
                 ]);
                 
                 $this->session->setFlashdata('success_msg', 'Configuración de asignación automática actualizada correctamente');
+                return redirect()->to(current_url());
             }
         }
+
+        // Si llegamos aquí, mostrar la vista con los datos actuales
+        $autoAssignment = new AutoAssignment();
+        $departments = Services::departments();
         
-        return redirect()->to(current_url());
+        return view('staff/auto_assignment', [
+            'auto_assignment_enabled' => $autoAssignment->isAutoAssignmentEnabled(),
+            'assignment_method' => $autoAssignment->getAssignmentMethod(),
+            'departments' => $departments->getAll(),
+            'error_msg' => $this->session->getFlashdata('error_msg'),
+            'success_msg' => $this->session->getFlashdata('success_msg')
+        ]);
     }
     
     public function departmentStats($department_id)

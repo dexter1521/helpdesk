@@ -16,7 +16,7 @@ class Settings
         if(!$this->vars)
         {
             $db = Database::connect();
-            $builder = $db->table('config');
+            $builder = $db->table('hdzfv_config');
             $this->vars = $builder->get()->getRow();
         }
         return (isset($this->vars->$var) ? $this->vars->$var : '');
@@ -27,9 +27,12 @@ class Settings
             $field = [$field => $value];
         }
         $db = Database::connect();
-        $db->table('config')
+        $result = $db->table('hdzfv_config')
             ->set($field)
+            ->where('id', 1)
             ->update();
+        
+        return $result;
     }
 
     public function getLogo()
