@@ -93,6 +93,29 @@ $this->section('content');
                                 </select>
                             </div>
                         </div>
+                        <div class="col-lg-4">
+                            <div class="form-group">
+                                <label>Agente Asignado</label>
+                                <select name="assigned_staff" class="form-control custom-select">
+                                    <option value="0">-- Sin asignar --</option>
+                                    <?php
+                                    if(isset($staff_list)){
+                                        foreach ($staff_list as $staff_member){
+                                            $selected = (isset($ticket->staff_id) && $ticket->staff_id == $staff_member->id) ? 'selected' : '';
+                                            echo '<option value="'.$staff_member->id.'" '.$selected.'>'.$staff_member->fullname.'</option>';
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                                <small class="form-text text-muted">
+                                    <?php if(isset($ticket->staff_id) && $ticket->staff_id > 0): ?>
+                                        <i class="fa fa-robot text-info"></i> Asignado automáticamente
+                                    <?php else: ?>
+                                        <i class="fa fa-user text-muted"></i> Asignación manual
+                                    <?php endif; ?>
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     <?php
                     if($ticket->custom_vars != ''){

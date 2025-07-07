@@ -36,6 +36,7 @@ class Tickets
                 $department_id = 1;
             }
         }
+        
         $this->ticketsModel->protect(false);
         $this->ticketsModel->insert([
             'department_id' => $department_id,
@@ -45,9 +46,16 @@ class Tickets
             'date' => time(),
             'last_update' => time(),
             'last_replier' => 0,
+            'staff_id' => 0, // Inicialmente sin asignar
         ]);
         $this->ticketsModel->protect(true);
-        return $this->ticketsModel->getInsertID();
+        
+        $ticket_id = $this->ticketsModel->getInsertID();
+        
+        // Intentar asignación automática si está habilitada
+        $this->attemptAutoAssignment($ticket_id, $department_id);
+        
+        return $ticket_id;
     }
 
     public function addMessage($ticket_id, $message, $staff_id=0, $detect_ip=true)
@@ -812,5 +820,53 @@ class Tickets
         $ticketNotesModel->update($note_id, [
             'message' => esc($note)
         ]);
+    }
+
+    /**
+     * Intentar asignación automática de ticket
+     * 
+     * @param int $ticket_id ID del ticket creado
+     * @param int $department_id ID del departamento
+     * @return bool|int ID del staff asignado o false si no se asigna
+     */
+    protected function attemptAutoAssignment($ticket_id, $department_id)
+    {
+        try {
+            // Cargar la biblioteca de asignación automática
+            $autoAssignment = new \App\Libraries\AutoAssignment();
+            
+            // Intentar asignar el ticket
+            $assigned_staff_id = $autoAssignment->assignTicket($ticket_id, $department_id);
+            
+            if ($assigned_staff_id) {
+                log_message('info', "Ticket #{$ticket_id} asignado automáticamente al staff #{$assigned_staff_id}");
+                return $assigned_staff_id;
+            }
+            
+            return false;
+        } catch (\Exception $e) {
+            log_message('error', 'Error en asignación automática: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Reasignar ticket manualmente
+     * 
+     * @param int $ticket_id ID del ticket
+     * @param int $staff_id ID del staff (0 para no asignado)
+     * @return bool
+     */
+    public function reassignTicket($ticket_id, $staff_id = 0)
+    {
+        $this->ticketsModel->protect(false);
+        $result = $this->ticketsModel->update($ticket_id, ['staff_id' => $staff_id]);
+        $this->ticketsModel->protect(true);
+        
+        if ($result) {
+            log_message('info', "Ticket #{$ticket_id} reasignado manualmente al staff #{$staff_id}");
+        }
+        
+        return $result;
     }
 }
