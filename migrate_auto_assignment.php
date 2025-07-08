@@ -8,16 +8,16 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-// Cargar la configuración de la base de datos
-require_once 'hdz/app/Config/Database.php';
+// Cargar la configuración de la base de datos desde variables de entorno (Docker)
+// O usar configuración manual si no están disponibles
 
 // Configuración de la base de datos (ajustar según tu configuración)
 $config = [
-    'hostname' => 'localhost',
-    'username' => 'root',
-    'password' => '',
-    'database' => 'helpdeskz', // Cambiar por el nombre de tu base de datos
-    'charset' => 'utf8mb3'
+    'hostname' => getenv('DB_HOST') ?: 'localhost',
+    'username' => getenv('DB_USER') ?: 'root',
+    'password' => getenv('DB_PASSWORD') ?: '',
+    'database' => getenv('DB_NAME') ?: 'helpdesk', // Cambiar por el nombre de tu base de datos
+    'charset' => 'utf8'
 ];
 
 try {

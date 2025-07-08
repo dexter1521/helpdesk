@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @package HelpDeskZ Auto Assignment
  * @author: HelpDeskZ Team
@@ -16,13 +17,13 @@ class AutoAssignment
 {
     protected $db;
     protected $settings;
-    
+
     public function __construct()
     {
         $this->db = Database::connect();
         $this->settings = Services::settings();
     }
-    
+
     /**
      * Asignar ticket automáticamente usando el método configurado
      * 
@@ -36,9 +37,9 @@ class AutoAssignment
         if (!$this->isAutoAssignmentEnabled()) {
             return false;
         }
-        
+
         $method = $this->getAssignmentMethod();
-        
+
         switch ($method) {
             case 'random':
                 return $this->assignRandom($ticket_id, $department_id);
@@ -50,72 +51,72 @@ class AutoAssignment
                 return $this->assignBalanced($ticket_id, $department_id);
         }
     }
-    
+
     /**
      * Asignación aleatoria
      */
     protected function assignRandom($ticket_id, $department_id)
     {
         $available_staff = $this->getAvailableStaff($department_id);
-        
+
         if (empty($available_staff)) {
             return false;
         }
-        
+
         // Selección aleatoria
         $selected_staff = $available_staff[array_rand($available_staff)];
-        
+
         return $this->performAssignment($ticket_id, $selected_staff['id'], $department_id);
     }
-    
+
     /**
      * Asignación balanceada (round-robin)
      */
     protected function assignBalanced($ticket_id, $department_id)
     {
         $available_staff = $this->getAvailableStaff($department_id);
-        
+
         if (empty($available_staff)) {
             return false;
         }
-        
+
         // Obtener conteos actuales de asignación
         $assignment_counts = $this->getAssignmentCounts($department_id);
-        
+
         // Encontrar el staff con menor número de asignaciones
         $min_assignments = PHP_INT_MAX;
         $selected_staff = null;
-        
+
         foreach ($available_staff as $staff) {
-            $count = $assignment_counts[$staff['id']] ?? 0;
+            $count = isset($assignment_counts[$staff['id']]) ? $assignment_counts[$staff['id']] : 0;
             if ($count < $min_assignments) {
                 $min_assignments = $count;
                 $selected_staff = $staff;
             }
         }
-        
+
         if (!$selected_staff) {
             return false;
         }
-        
+
         return $this->performAssignment($ticket_id, $selected_staff['id'], $department_id);
     }
-    
+
     /**
      * Asignación ponderada por prioridad
      */
     protected function assignWeighted($ticket_id, $department_id)
     {
         $available_staff = $this->getAvailableStaffWithWeights($department_id);
-        
+
         if (empty($available_staff)) {
             return false;
         }
-        
+
         // Calcular probabilidades basadas en peso
         $total_weight = array_sum(array_column($available_staff, 'weight'));
         $random = mt_rand(1, $total_weight);
-        
+
         $current_weight = 0;
         foreach ($available_staff as $staff) {
             $current_weight += $staff['weight'];
@@ -123,10 +124,10 @@ class AutoAssignment
                 return $this->performAssignment($ticket_id, $staff['id'], $department_id);
             }
         }
-        
+
         return false;
     }
-    
+
     /**
      * Realizar la asignación efectiva del ticket
      */
@@ -136,20 +137,20 @@ class AutoAssignment
         $update_ticket = $this->db->table('hdzfv_tickets')
             ->where('id', $ticket_id)
             ->update(['staff_id' => $staff_id]);
-            
+
         if (!$update_ticket) {
             return false;
         }
-        
+
         // Actualizar contador de asignaciones
         $this->updateAssignmentCount($department_id, $staff_id);
-        
+
         // Log de la asignación
         log_message('info', "Ticket #{$ticket_id} asignado automáticamente al staff #{$staff_id} en departamento #{$department_id}");
-        
+
         return $staff_id;
     }
-    
+
     /**
      * Obtener staff disponible para un departamento
      */
@@ -164,10 +165,10 @@ class AutoAssignment
             AND sd.active = 1
             ORDER BY s.fullname ASC
         ";
-        
+
         $result = $this->db->query($query, [$department_id]);
         $staff_list = $result->getResultArray();
-        
+
         // Si no hay agentes específicos configurados, usar agentes con acceso general al departamento
         if (empty($staff_list)) {
             $query_fallback = "
@@ -181,14 +182,14 @@ class AutoAssignment
                 )
                 ORDER BY s.fullname ASC
             ";
-            
+
             $result = $this->db->query($query_fallback);
             $staff_list = $result->getResultArray();
         }
-        
+
         return $staff_list;
     }
-    
+
     /**
      * Obtener staff con pesos de prioridad
      */
@@ -204,10 +205,10 @@ class AutoAssignment
             AND sd.active = 1
             ORDER BY weight DESC, s.fullname ASC
         ";
-        
+
         $result = $this->db->query($query, [$department_id]);
         $staff_list = $result->getResultArray();
-        
+
         // Si no hay agentes específicos configurados, usar agentes con acceso general al departamento
         if (empty($staff_list)) {
             $query_fallback = "
@@ -221,14 +222,14 @@ class AutoAssignment
                 )
                 ORDER BY s.fullname ASC
             ";
-            
+
             $result = $this->db->query($query_fallback);
             $staff_list = $result->getResultArray();
         }
-        
+
         return $staff_list;
     }
-    
+
     /**
      * Obtener conteos de asignación actuales
      */
@@ -239,17 +240,17 @@ class AutoAssignment
             FROM hdzfv_department_assignments
             WHERE department_id = ?
         ";
-        
+
         $result = $this->db->query($query, [$department_id]);
         $counts = [];
-        
+
         foreach ($result->getResultArray() as $row) {
             $counts[$row['staff_id']] = $row['assignment_count'];
         }
-        
+
         return $counts;
     }
-    
+
     /**
      * Actualizar contador de asignaciones
      */
@@ -263,11 +264,11 @@ class AutoAssignment
                 assignment_count = assignment_count + 1,
                 last_assignment = ?
         ";
-        
+
         $timestamp = time();
         return $this->db->query($query, [$department_id, $staff_id, $timestamp, $timestamp]);
     }
-    
+
     /**
      * Verificar si la asignación automática está habilitada
      */
@@ -282,7 +283,7 @@ class AutoAssignment
             return false;
         }
     }
-    
+
     /**
      * Obtener método de asignación configurado
      */
@@ -296,7 +297,7 @@ class AutoAssignment
             return 'balanced';
         }
     }
-    
+
     /**
      * Reasignar ticket manualmente
      */
@@ -305,14 +306,14 @@ class AutoAssignment
         $update = $this->db->table('hdzfv_tickets')
             ->where('id', $ticket_id)
             ->update(['staff_id' => $staff_id]);
-            
+
         if ($update) {
             log_message('info', "Ticket #{$ticket_id} reasignado manualmente al staff #{$staff_id}");
         }
-        
+
         return $update;
     }
-    
+
     /**
      * Obtener estadísticas de asignación por departamento
      */
@@ -333,11 +334,11 @@ class AutoAssignment
             )
             ORDER BY assignments DESC, s.fullname ASC
         ";
-        
+
         $result = $this->db->query($query, [$department_id, $department_id, $department_id]);
         return $result->getResultArray();
     }
-    
+
     /**
      * Resetear contadores de asignación
      */
@@ -345,12 +346,12 @@ class AutoAssignment
     {
         $query = "DELETE FROM hdzfv_department_assignments";
         $params = [];
-        
+
         if ($department_id) {
             $query .= " WHERE department_id = ?";
             $params[] = $department_id;
         }
-        
+
         return $this->db->query($query, $params);
     }
 }
