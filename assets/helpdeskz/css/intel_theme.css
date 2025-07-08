@@ -1,0 +1,96 @@
+/* Intel Theme - Colores tecnológicos tipo Intel para HelpDeskZ */
+
+/* Variables de colores Intel */
+:root {
+    --intel-primary: #0071C5;
+    --intel-dark: #0052A3;
+    --intel-secondary: #808285;
+    --intel-light: #C4C4C4;
+    --intel-accent: #00A4EF;
+}
+
+/* Sobrescribir colores del tema base con colores Intel */
+
+/* Links principales */
+.static_link, .static_link:hover{
+    color: var(--intel-primary) !important;
+}
+.inactive_link, .inactive_link:hover{
+    color: var(--intel-accent) !important;
+}
+
+/* Navbar */
+.navbar-light .navbar-nav .nav-link {
+    color: var(--intel-dark) !important;
+}
+.navbar-nav .nav-link:focus, 
+.navbar-light .navbar-nav .nav-link:hover {
+    color: var(--intel-primary) !important;
+}
+
+/* Knowledge base links */
+a.kb_category:hover{
+    color: var(--intel-primary) !important;
+}
+
+/* Botones primarios */
+.btn-primary {
+    background-color: var(--intel-primary) !important;
+    border-color: var(--intel-primary) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+    background-color: var(--intel-dark) !important;
+    border-color: var(--intel-dark) !important;
+}
+
+/* Elementos de formulario con focus */
+.form-control:focus {
+    border-color: var(--intel-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(0, 113, 197, 0.25) !important;
+}
+
+/* Elementos primarios de Bootstrap */
+.bg-primary {
+    background-color: var(--intel-primary) !important;
+}
+
+.text-primary {
+    color: var(--intel-primary) !important;
+}
+
+.border-primary {
+    border-color: var(--intel-primary) !important;
+}
+
+.badge-primary {
+    background-color: var(--intel-primary) !important;
+}
+
+/* Navegación activa */
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link {
+    background-color: var(--intel-primary) !important;
+    border-color: var(--intel-primary) !important;
+}
+
+/* Enlaces en hover */
+a:hover {
+    color: var(--intel-primary) !important;
+}
+
+/* Footer con colores Intel */
+#footer {
+    background-color: var(--intel-secondary) !important;
+    color: #FFFFFF !important;
+}
+
+#footer a {
+    color: var(--intel-accent) !important;
+}
+
+#footer a:hover {
+    color: #FFFFFF !important;
+}
