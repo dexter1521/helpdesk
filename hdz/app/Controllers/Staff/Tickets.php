@@ -327,6 +327,8 @@ class Tickets extends BaseController
                 }
 
                 $ticket = $tickets->getTicket(['id' => $ticket_id]);
+                // Generate PDF with QR code
+                $tickets->generateTicketPdf($ticket, $message_id);
                 $tickets->replyTicketNotification($ticket, $message, (isset($files) ? $files : null));
                 $this->session->setFlashdata('form_success','Ticket has been created and client was notified.');
                 return redirect()->route('staff_ticket_view', [$ticket_id]);
