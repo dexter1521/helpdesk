@@ -220,35 +220,23 @@ $routes->group(Helpdesk::STAFF_URI, [
     $routes->add('setup/security', 'Staff\Settings::security',[
         'as' => 'staff_security_settings'
     ]);
-    $routes->add('setup/tickets', 'Staff\Settings::tickets',[
-        'as' => 'staff_tickets_settings'
+    $routes->add('setup/auto-assignment', 'Staff\AutoAssignmentController::index', [
+        'as' => 'staff_auto_assignment'
     ]);
-    $routes->add('setup/kb', 'Staff\Settings::kb',[
-        'as' => 'staff_kb_settings'
+    $routes->add('setup/auto-assignment/update', 'Staff\AutoAssignmentController::updateSettings', [
+        'as' => 'staff_auto_assignment_update'
     ]);
-    $routes->add('setup/email-templates', 'Staff\Settings::emailTemplates',[
-        'as' => 'staff_email_templates'
+    $routes->add('setup/auto-assignment/staff-departments', 'Staff\AutoAssignmentController::staffDepartments', [
+        'as' => 'staff_auto_assignment_staff'
     ]);
-    $routes->add('setup/email-templates/edit/(:any)', 'Staff\Settings::emailTemplatesEdit/$1',[
-        'as' => 'staff_email_templates_edit'
+    $routes->add('setup/auto-assignment/department-stats/(:num)', 'Staff\AutoAssignmentController::departmentStats/$1', [
+        'as' => 'staff_auto_assignment_stats'
     ]);
-    $routes->add('setup/email-addresses', 'Staff\Settings::emails',[
-        'as' => 'staff_emails'
+    $routes->add('setup/auto-assignment/reset-counters', 'Staff\AutoAssignmentController::resetCounters', [
+        'as' => 'staff_auto_assignment_reset'
     ]);
-    $routes->add('setup/email-addresses/new', 'Staff\Settings::emailsCreate',[
-        'as' => 'staff_emails_new'
-    ]);
-    $routes->add('setup/email-addresses/edit/(:num)', 'Staff\Settings::emailsEdit/$1',[
-        'as' => 'staff_emails_edit'
-    ]);
-    $routes->add('setup/api', 'Staff\Settings::api',[
-        'as' => 'staff_api'
-    ]);
-    $routes->add('setup/api/new', 'Staff\Settings::apiCreate',[
-        'as' => 'staff_api_new'
-    ]);
-    $routes->add('setup/api/edit/(:num)', 'Staff\Settings::apiEdit/$1',[
-        'as' => 'staff_api_edit'
+    $routes->add('setup/auto-assignment/run-migration', 'Staff\AutoAssignmentController::runMigration', [
+        'as' => 'staff_auto_assignment_migration'
     ]);
     $routes->add('account/log-out','Staff\Auth::logout',[
         'as' => 'staff_logout'

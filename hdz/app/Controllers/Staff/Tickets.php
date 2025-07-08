@@ -79,8 +79,10 @@ class Tickets extends BaseController
             $this->session->setFlashdata('ticket_error', lang('Admin.error.ticketNotFound'));
             return redirect()->route('staff_tickets');
         }
-        $key = array_search($ticket->department_id, array_column($this->staff->getDepartments(),'id'));
-        if(!is_numeric($key)){
+        
+        // Verificar permisos: departamento y asignación específica si está habilitada la auto-asignación
+        $hasAccess = $this->checkTicketAccess($ticket);
+        if(!$hasAccess){
             $this->session->setFlashdata('ticket_error', lang('Admin.error.ticketNotPermission'));
             return redirect()->route('staff_tickets');
         }
@@ -484,5 +486,43 @@ class Tickets extends BaseController
             'error_msg' => isset($error_msg) ? $error_msg : null,
             'success_msg' => $this->session->has('canned_update') ? $this->session->getFlashdata('canned_update') : null,
         ]);
+    }
+
+    /**
+     * Verificar si el staff actual tiene acceso al ticket
+     * Considera tanto permisos de departamento como asignación específica
+     */
+    private function checkTicketAccess($ticket)
+    {
+        // Los administradores siempre tienen acceso completo
+        if($this->staff->getData('admin') == 1){
+            return true;
+        }
+
+        // Verificar acceso básico por departamento
+        $departmentAccess = array_search($ticket->department_id, array_column($this->staff->getDepartments(),'id'));
+        
+        // Si no tiene acceso al departamento, denegar completamente
+        if(!is_numeric($departmentAccess)){
+            return false;
+        }
+
+        // Verificar si la auto-asignación está habilitada
+        $autoAssignment = new \App\Libraries\AutoAssignment();
+        $autoAssignmentEnabled = $autoAssignment->isAutoAssignmentEnabled();
+        
+        if(!$autoAssignmentEnabled){
+            // Si no está habilitada la auto-asignación, usar lógica tradicional (acceso por departamento)
+            return true;
+        }
+
+        // Si está habilitada la auto-asignación, verificar asignación específica
+        if(!empty($ticket->staff_id) && $ticket->staff_id != 0){
+            // El ticket está asignado específicamente, solo el staff asignado puede verlo
+            return ($ticket->staff_id == $this->staff->getData('id'));
+        }
+
+        // Si el ticket no está asignado a nadie específico, permitir acceso por departamento
+        return true;
     }
 }
