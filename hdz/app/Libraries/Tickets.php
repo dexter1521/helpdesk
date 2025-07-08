@@ -613,7 +613,7 @@ class Tickets
 
         // Verificar si la auto-asignación está habilitada  
         $autoAssignment = new \App\Libraries\AutoAssignment();
-        $autoAssignmentEnabled = true; // FORZAR TEMPORALMENTE PARA DEBUG
+        $autoAssignmentEnabled = $autoAssignment->isAutoAssignmentEnabled();
         
         // DEBUG: Log para verificar qué está pasando
         log_message('debug', "staffTickets DEBUG - Staff ID: " . $staff->getData('id') . ", Admin: " . $staff->getData('admin') . ", AutoAssignment: " . ($autoAssignmentEnabled ? 'TRUE' : 'FALSE'));

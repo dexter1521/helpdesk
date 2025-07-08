@@ -31,7 +31,7 @@ if(isset($success_msg)){
                 <h5 class="m-0">Configuración de Asignación Automática</h5>
             </div>
             <div class="card-body">
-                <form method="post" action="">
+                <form method="post" action="<?php echo site_url(route_to('staff_auto_assignment_update')); ?>">
                     <input type="hidden" name="do" value="update_settings">
                 
                 <div class="form-group">
@@ -75,11 +75,16 @@ if(isset($success_msg)){
                     <button type="button" class="btn btn-info ml-2" onclick="checkDatabaseStatus()">
                         <i class="fa fa-database"></i> Verificar BD
                     </button>
-                    <button type="button" class="btn btn-warning ml-2" onclick="runMigration()">
-                        <i class="fa fa-wrench"></i> Ejecutar Migración
-                    </button>
                 </div>
                 
+                </form>
+                
+                <!-- Formulario separado para ejecutar migración -->
+                <form method="post" action="<?php echo site_url(route_to('staff_auto_assignment_migration')); ?>" style="display: inline;">
+                    <input type="hidden" name="do" value="run_migration">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('¿Está seguro de que desea ejecutar la migración de base de datos?')">
+                        <i class="fa fa-wrench"></i> Ejecutar Migración
+                    </button>
                 </form>
             </div>
         </div>

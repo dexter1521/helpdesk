@@ -274,36 +274,13 @@ class AutoAssignment
     public function isAutoAssignmentEnabled()
     {
         try {
-            // Verificar en la tabla config (forma principal)
-            $query = "SELECT auto_assignment FROM hdzfv_config WHERE id = 1";
-            $result = $this->db->query($query);
-            
-            if ($result->getNumRows() > 0) {
-                $row = $result->getRow();
-                // Verificar si la columna existe
-                if (property_exists($row, 'auto_assignment')) {
-                    return (bool) $row->auto_assignment;
-                }
-            }
+            // Usar la clase Settings para obtener la configuración
+            $auto_assignment = $this->settings->config('auto_assignment');
+            return (bool) $auto_assignment;
         } catch (\Exception $e) {
-            log_message('error', 'Error al verificar auto_assignment en config: ' . $e->getMessage());
+            log_message('error', 'Error al verificar auto_assignment: ' . $e->getMessage());
+            return false;
         }
-        
-        try {
-            // Fallback: verificar en settings si no existe en config
-            $query = "SELECT value FROM hdzfv_settings WHERE var = 'auto_assignment_enabled'";
-            $result = $this->db->query($query);
-            
-            if ($result->getNumRows() > 0) {
-                $row = $result->getRow();
-                return (bool) $row->value;
-            }
-        } catch (\Exception $e) {
-            log_message('error', 'Error al verificar auto_assignment en settings: ' . $e->getMessage());
-        }
-        
-        // Si no encuentra nada, asumir deshabilitado
-        return false;
     }
     
     /**
@@ -312,21 +289,12 @@ class AutoAssignment
     public function getAssignmentMethod()
     {
         try {
-            $query = "SELECT auto_assignment_method FROM hdzfv_config WHERE id = 1";
-            $result = $this->db->query($query);
-            
-            if ($result->getNumRows() > 0) {
-                $row = $result->getRow();
-                // Verificar si la columna existe
-                if (property_exists($row, 'auto_assignment_method')) {
-                    return $row->auto_assignment_method ?: 'balanced';
-                }
-            }
+            $auto_assignment_method = $this->settings->config('auto_assignment_method');
+            return $auto_assignment_method ?: 'balanced';
         } catch (\Exception $e) {
             log_message('error', 'Error al obtener método de asignación: ' . $e->getMessage());
+            return 'balanced';
         }
-        
-        return 'balanced';
     }
     
     /**

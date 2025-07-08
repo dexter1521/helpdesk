@@ -507,7 +507,7 @@ class Tickets extends BaseController
 
         // Verificar si la auto-asignación está habilitada
         $autoAssignment = new \App\Libraries\AutoAssignment();
-        $autoAssignmentEnabled = true; // FORZAR TEMPORALMENTE PARA DEBUG
+        $autoAssignmentEnabled = $autoAssignment->isAutoAssignmentEnabled();
         
         if(!$autoAssignmentEnabled){
             // Si no está habilitada la auto-asignación, usar lógica tradicional (acceso por departamento)

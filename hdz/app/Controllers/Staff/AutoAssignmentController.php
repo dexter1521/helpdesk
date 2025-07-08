@@ -72,9 +72,17 @@ class AutoAssignmentController extends BaseController
                     
                     if (empty($columns)) {
                         // Si no existen las columnas, agregar las columnas necesarias
-                        $db->query("ALTER TABLE `hdzfv_config` 
-                                   ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`,
-                                   ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`");
+                        try {
+                            $db->query("ALTER TABLE `hdzfv_config` 
+                                       ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`");
+                            $db->query("ALTER TABLE `hdzfv_config` 
+                                       ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`");
+                        } catch (\Exception $e) {
+                            // Si las columnas ya existen, continuar
+                            if (!str_contains($e->getMessage(), 'Duplicate column')) {
+                                throw $e;
+                            }
+                        }
                     }
                     
                     // Actualizar la configuración
@@ -96,7 +104,7 @@ class AutoAssignmentController extends BaseController
                     $this->session->setFlashdata('error_msg', 'Error interno: ' . $e->getMessage());
                 }
                 
-                return redirect()->to(current_url());
+                return redirect()->route('staff_auto_assignment');
             }
         }
 
@@ -275,34 +283,64 @@ class AutoAssignmentController extends BaseController
         if($this->request->getPost('do') == 'run_migration'){
             try {
                 $db = \Config\Database::connect();
-                
-                // Leer el archivo de migración y ejecutarlo
-                $migration_file = ROOTPATH . 'mysql/auto_assignment_migration.sql';
-                
-                if (!file_exists($migration_file)) {
-                    $this->session->setFlashdata('error_msg', 'Archivo de migración no encontrado: ' . $migration_file);
-                    return redirect()->back();
-                }
-                
-                $sql_content = file_get_contents($migration_file);
-                
-                // Dividir en comandos individuales
-                $commands = explode(';', $sql_content);
                 $executed = 0;
                 $errors = [];
                 
-                foreach ($commands as $command) {
-                    $command = trim($command);
-                    if (!empty($command) && !str_starts_with($command, '--')) {
-                        try {
-                            $db->query($command);
-                            $executed++;
-                        } catch (\Exception $e) {
-                            // Si el error es por columna/tabla existente, no es un error real
-                            if (!str_contains($e->getMessage(), 'Duplicate column') && 
-                                !str_contains($e->getMessage(), 'already exists')) {
-                                $errors[] = $e->getMessage();
-                            }
+                // Lista de comandos SQL para ejecutar
+                $migration_commands = [
+                    // Agregar campo staff_id a la tabla tickets
+                    "ALTER TABLE `hdzfv_tickets` ADD COLUMN `staff_id` int NOT NULL DEFAULT '0' AFTER `user_id`",
+                    "ALTER TABLE `hdzfv_tickets` ADD INDEX `idx_staff_id` (`staff_id`)",
+                    
+                    // Agregar configuración de auto assignment
+                    "ALTER TABLE `hdzfv_config` ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`",
+                    "ALTER TABLE `hdzfv_config` ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`",
+                    
+                    // Configurar valores por defecto
+                    "UPDATE `hdzfv_config` SET `auto_assignment` = 0, `auto_assignment_method` = 'balanced' WHERE `id` = 1",
+                    
+                    // Crear tabla de asignaciones por departamento
+                    "CREATE TABLE IF NOT EXISTS `hdzfv_department_assignments` (
+                        `id` int NOT NULL AUTO_INCREMENT,
+                        `department_id` int NOT NULL,
+                        `staff_id` int NOT NULL,
+                        `assignment_count` int NOT NULL DEFAULT 0,
+                        `last_assignment` int NOT NULL DEFAULT 0,
+                        PRIMARY KEY (`id`),
+                        UNIQUE KEY `dept_staff_unique` (`department_id`, `staff_id`),
+                        KEY `idx_department_id` (`department_id`),
+                        KEY `idx_staff_id` (`staff_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3",
+                    
+                    // Crear tabla de staff por departamento
+                    "CREATE TABLE IF NOT EXISTS `hdzfv_staff_departments` (
+                        `id` int NOT NULL AUTO_INCREMENT,
+                        `staff_id` int NOT NULL,
+                        `department_id` int NOT NULL,
+                        `active` tinyint(1) NOT NULL DEFAULT 1,
+                        `priority_weight` int NOT NULL DEFAULT 1,
+                        PRIMARY KEY (`id`),
+                        UNIQUE KEY `staff_dept_unique` (`staff_id`, `department_id`),
+                        KEY `idx_staff_id` (`staff_id`),
+                        KEY `idx_department_id` (`department_id`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3"
+                ];
+                
+                // Ejecutar cada comando
+                foreach ($migration_commands as $command) {
+                    try {
+                        $db->query($command);
+                        $executed++;
+                        log_message('info', 'Comando de migración ejecutado: ' . substr($command, 0, 50) . '...');
+                    } catch (\Exception $e) {
+                        // Si el error es por columna/tabla/índice existente, no es un error real
+                        if (str_contains($e->getMessage(), 'Duplicate column') || 
+                            str_contains($e->getMessage(), 'already exists') ||
+                            str_contains($e->getMessage(), 'Duplicate key')) {
+                            log_message('info', 'Comando ya aplicado previamente: ' . substr($command, 0, 50) . '...');
+                        } else {
+                            $errors[] = 'Error en comando: ' . $e->getMessage();
+                            log_message('error', 'Error en migración: ' . $e->getMessage());
                         }
                     }
                 }
@@ -315,9 +353,10 @@ class AutoAssignmentController extends BaseController
                 
             } catch (\Exception $e) {
                 $this->session->setFlashdata('error_msg', 'Error al ejecutar migración: ' . $e->getMessage());
+                log_message('error', 'Error general en migración: ' . $e->getMessage());
             }
         }
         
-        return redirect()->back();
+        return redirect()->route('staff_auto_assignment');
     }
 }
