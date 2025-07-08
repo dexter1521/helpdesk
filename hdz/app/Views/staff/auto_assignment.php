@@ -69,6 +69,15 @@ if(isset($success_msg)){
                     <button type="submit" class="btn btn-primary">
                         <i class="fa fa-save"></i> Guardar Configuración
                     </button>
+                    <a href="<?php echo site_url(route_to('staff_auto_assignment')); ?>" class="btn btn-secondary ml-2">
+                        <i class="fa fa-refresh"></i> Recargar Estado
+                    </a>
+                    <button type="button" class="btn btn-info ml-2" onclick="checkDatabaseStatus()">
+                        <i class="fa fa-database"></i> Verificar BD
+                    </button>
+                    <button type="button" class="btn btn-warning ml-2" onclick="runMigration()">
+                        <i class="fa fa-wrench"></i> Ejecutar Migración
+                    </button>
                 </div>
                 
                 </form>
@@ -180,6 +189,26 @@ if(isset($success_msg)){
 </div>
 <?php endif; ?>
 
+<!-- Modal para información de debug -->
+<div class="modal fade" id="debugModal" tabindex="-1" role="dialog" aria-labelledby="debugModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="debugModalLabel">Información de Base de Datos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- El contenido se carga dinámicamente -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 $this->endSection();
 $this->section('script_block');
@@ -199,6 +228,78 @@ $(document).ready(function() {
     
     // Ejecutar cuando cambie el valor
     $('#auto_assignment_toggle').on('change', toggleAssignmentMethod);
+    
+    // Función para verificar estado de la base de datos
+    window.checkDatabaseStatus = function() {
+        $.ajax({
+            url: '<?php echo site_url(route_to('staff_auto_assignment_debug')); ?>',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                let message = '<h5>Estado de la Base de Datos:</h5>';
+                
+                if (data.error) {
+                    message += '<div class="alert alert-danger">Error: ' + data.error + '</div>';
+                } else {
+                    // Columnas en config
+                    message += '<h6>Columnas en hdzfv_config:</h6>';
+                    if (data.config_columns && data.config_columns.length > 0) {
+                        message += '<ul>';
+                        data.config_columns.forEach(function(col) {
+                            message += '<li>' + col.Field + ' (' + col.Type + ')</li>';
+                        });
+                        message += '</ul>';
+                    } else {
+                        message += '<p class="text-danger">¡Columnas auto_assignment no encontradas!</p>';
+                    }
+                    
+                    // Valores actuales
+                    message += '<h6>Valores actuales:</h6>';
+                    if (data.config_values) {
+                        message += '<ul>';
+                        message += '<li>auto_assignment: ' + (data.config_values.auto_assignment || 'null') + '</li>';
+                        message += '<li>auto_assignment_method: ' + (data.config_values.auto_assignment_method || 'null') + '</li>';
+                        message += '</ul>';
+                    } else {
+                        message += '<p class="text-warning">No se pudieron obtener los valores</p>';
+                    }
+                    
+                    // Estado de tablas
+                    message += '<h6>Estado de tablas:</h6>';
+                    message += '<ul>';
+                    message += '<li>hdzfv_staff_departments: ' + (data.tables.hdzfv_staff_departments ? '✓ Existe' : '✗ No existe') + '</li>';
+                    message += '<li>hdzfv_department_assignments: ' + (data.tables.hdzfv_department_assignments ? '✓ Existe' : '✗ No existe') + '</li>';
+                    message += '<li>tickets.staff_id: ' + (data.tickets_staff_id ? '✓ Existe' : '✗ No existe') + '</li>';
+                    message += '</ul>';
+                }
+                
+                // Mostrar en modal
+                $('#debugModal .modal-body').html(message);
+                $('#debugModal').modal('show');
+            },
+            error: function() {
+                alert('Error al obtener información de la base de datos');
+            }
+        });
+    };
+    
+    // Función para ejecutar migración
+    window.runMigration = function() {
+        if (confirm('¿Está seguro de que desea ejecutar la migración de base de datos? Esto agregará las columnas y tablas necesarias para la asignación automática.')) {
+            // Crear un formulario temporal para enviar la solicitud POST
+            var form = $('<form>', {
+                'method': 'POST',
+                'action': '<?php echo site_url(route_to('staff_auto_assignment_migration')); ?>'
+            });
+            form.append($('<input>', {
+                'type': 'hidden',
+                'name': 'do',
+                'value': 'run_migration'
+            }));
+            $('body').append(form);
+            form.submit();
+        }
+    };
 });
 </script>
 <?php

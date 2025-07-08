@@ -60,13 +60,42 @@ class AutoAssignmentController extends BaseController
             if($validation->withRequest($this->request)->run() == false){
                 $this->session->setFlashdata('error_msg', $validation->listErrors());
             } else {
-                // Guardar configuraciones
-                $this->settings->save([
-                    'auto_assignment' => $this->request->getPost('auto_assignment'),
-                    'auto_assignment_method' => $this->request->getPost('auto_assignment_method')
-                ]);
+                try {
+                    // Guardar configuraciones usando conexión directa a la base de datos
+                    $db = \Config\Database::connect();
+                    
+                    $auto_assignment = $this->request->getPost('auto_assignment');
+                    $auto_assignment_method = $this->request->getPost('auto_assignment_method');
+                    
+                    // Verificar si las columnas existen en la tabla config
+                    $columns = $db->query("SHOW COLUMNS FROM hdzfv_config LIKE 'auto_assignment%'")->getResultArray();
+                    
+                    if (empty($columns)) {
+                        // Si no existen las columnas, agregar las columnas necesarias
+                        $db->query("ALTER TABLE `hdzfv_config` 
+                                   ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`,
+                                   ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`");
+                    }
+                    
+                    // Actualizar la configuración
+                    $result = $db->table('hdzfv_config')
+                        ->where('id', 1)
+                        ->update([
+                            'auto_assignment' => $auto_assignment,
+                            'auto_assignment_method' => $auto_assignment_method
+                        ]);
+                    
+                    if ($result) {
+                        $this->session->setFlashdata('success_msg', 'Configuración de asignación automática actualizada correctamente');
+                    } else {
+                        $this->session->setFlashdata('error_msg', 'Error al actualizar la configuración en la base de datos');
+                    }
+                    
+                } catch (\Exception $e) {
+                    log_message('error', 'Error al guardar configuración de auto_assignment: ' . $e->getMessage());
+                    $this->session->setFlashdata('error_msg', 'Error interno: ' . $e->getMessage());
+                }
                 
-                $this->session->setFlashdata('success_msg', 'Configuración de asignación automática actualizada correctamente');
                 return redirect()->to(current_url());
             }
         }
@@ -196,5 +225,99 @@ class AutoAssignmentController extends BaseController
         }
         
         $this->session->setFlashdata('success_msg', 'Asignaciones de staff a departamentos guardadas correctamente');
+    }
+    
+    public function debugStatus()
+    {
+        // Solo administradores pueden acceder
+        if($this->staff->getData('admin') != 1){
+            return redirect()->route('staff_dashboard');
+        }
+
+        $db = \Config\Database::connect();
+        $debug_info = [];
+        
+        try {
+            // Verificar columnas en hdzfv_config
+            $columns = $db->query("SHOW COLUMNS FROM hdzfv_config LIKE 'auto_assignment%'")->getResultArray();
+            $debug_info['config_columns'] = $columns;
+            
+            // Verificar valores actuales en hdzfv_config
+            $config_values = $db->query("SELECT auto_assignment, auto_assignment_method FROM hdzfv_config WHERE id = 1")->getRowArray();
+            $debug_info['config_values'] = $config_values;
+            
+            // Verificar existencia de tablas
+            $tables = [
+                'hdzfv_staff_departments' => $db->query("SHOW TABLES LIKE 'hdzfv_staff_departments'")->getNumRows() > 0,
+                'hdzfv_department_assignments' => $db->query("SHOW TABLES LIKE 'hdzfv_department_assignments'")->getNumRows() > 0
+            ];
+            $debug_info['tables'] = $tables;
+            
+            // Verificar columna staff_id en tickets
+            $staff_id_column = $db->query("SHOW COLUMNS FROM hdzfv_tickets LIKE 'staff_id'")->getNumRows() > 0;
+            $debug_info['tickets_staff_id'] = $staff_id_column;
+            
+        } catch (\Exception $e) {
+            $debug_info['error'] = $e->getMessage();
+        }
+        
+        // Retornar JSON para debug
+        return $this->response->setJSON($debug_info);
+    }
+    
+    public function runMigration()
+    {
+        // Solo administradores pueden acceder
+        if($this->staff->getData('admin') != 1){
+            return redirect()->route('staff_dashboard');
+        }
+
+        if($this->request->getPost('do') == 'run_migration'){
+            try {
+                $db = \Config\Database::connect();
+                
+                // Leer el archivo de migración y ejecutarlo
+                $migration_file = ROOTPATH . 'mysql/auto_assignment_migration.sql';
+                
+                if (!file_exists($migration_file)) {
+                    $this->session->setFlashdata('error_msg', 'Archivo de migración no encontrado: ' . $migration_file);
+                    return redirect()->back();
+                }
+                
+                $sql_content = file_get_contents($migration_file);
+                
+                // Dividir en comandos individuales
+                $commands = explode(';', $sql_content);
+                $executed = 0;
+                $errors = [];
+                
+                foreach ($commands as $command) {
+                    $command = trim($command);
+                    if (!empty($command) && !str_starts_with($command, '--')) {
+                        try {
+                            $db->query($command);
+                            $executed++;
+                        } catch (\Exception $e) {
+                            // Si el error es por columna/tabla existente, no es un error real
+                            if (!str_contains($e->getMessage(), 'Duplicate column') && 
+                                !str_contains($e->getMessage(), 'already exists')) {
+                                $errors[] = $e->getMessage();
+                            }
+                        }
+                    }
+                }
+                
+                if (empty($errors)) {
+                    $this->session->setFlashdata('success_msg', "Migración ejecutada correctamente. {$executed} comandos procesados.");
+                } else {
+                    $this->session->setFlashdata('error_msg', 'Algunos errores durante la migración: ' . implode(', ', $errors));
+                }
+                
+            } catch (\Exception $e) {
+                $this->session->setFlashdata('error_msg', 'Error al ejecutar migración: ' . $e->getMessage());
+            }
+        }
+        
+        return redirect()->back();
     }
 }

@@ -235,6 +235,12 @@ $routes->group(Helpdesk::STAFF_URI, [
     $routes->add('setup/auto-assignment/reset-counters', 'Staff\AutoAssignmentController::resetCounters', [
         'as' => 'staff_auto_assignment_reset'
     ]);
+    $routes->add('setup/auto-assignment/debug-status', 'Staff\AutoAssignmentController::debugStatus', [
+        'as' => 'staff_auto_assignment_debug'
+    ]);
+    $routes->add('setup/auto-assignment/run-migration', 'Staff\AutoAssignmentController::runMigration', [
+        'as' => 'staff_auto_assignment_migration'
+    ]);
     $routes->add('account/log-out','Staff\Auth::logout',[
         'as' => 'staff_logout'
     ]);

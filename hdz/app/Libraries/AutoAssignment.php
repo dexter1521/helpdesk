@@ -273,22 +273,33 @@ class AutoAssignment
      */
     public function isAutoAssignmentEnabled()
     {
-        // Verificar en la tabla config (forma principal)
-        $query = "SELECT auto_assignment FROM hdzfv_config WHERE id = 1";
-        $result = $this->db->query($query);
-        
-        if ($result->getNumRows() > 0) {
-            $row = $result->getRow();
-            return (bool) $row->auto_assignment;
+        try {
+            // Verificar en la tabla config (forma principal)
+            $query = "SELECT auto_assignment FROM hdzfv_config WHERE id = 1";
+            $result = $this->db->query($query);
+            
+            if ($result->getNumRows() > 0) {
+                $row = $result->getRow();
+                // Verificar si la columna existe
+                if (property_exists($row, 'auto_assignment')) {
+                    return (bool) $row->auto_assignment;
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al verificar auto_assignment en config: ' . $e->getMessage());
         }
         
-        // Fallback: verificar en settings si no existe en config
-        $query = "SELECT value FROM hdzfv_settings WHERE var = 'auto_assignment_enabled'";
-        $result = $this->db->query($query);
-        
-        if ($result->getNumRows() > 0) {
-            $row = $result->getRow();
-            return (bool) $row->value;
+        try {
+            // Fallback: verificar en settings si no existe en config
+            $query = "SELECT value FROM hdzfv_settings WHERE var = 'auto_assignment_enabled'";
+            $result = $this->db->query($query);
+            
+            if ($result->getNumRows() > 0) {
+                $row = $result->getRow();
+                return (bool) $row->value;
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al verificar auto_assignment en settings: ' . $e->getMessage());
         }
         
         // Si no encuentra nada, asumir deshabilitado
@@ -300,12 +311,19 @@ class AutoAssignment
      */
     public function getAssignmentMethod()
     {
-        $query = "SELECT auto_assignment_method FROM hdzfv_config WHERE id = 1";
-        $result = $this->db->query($query);
-        
-        if ($result->getNumRows() > 0) {
-            $row = $result->getRow();
-            return $row->auto_assignment_method ?: 'balanced';
+        try {
+            $query = "SELECT auto_assignment_method FROM hdzfv_config WHERE id = 1";
+            $result = $this->db->query($query);
+            
+            if ($result->getNumRows() > 0) {
+                $row = $result->getRow();
+                // Verificar si la columna existe
+                if (property_exists($row, 'auto_assignment_method')) {
+                    return $row->auto_assignment_method ?: 'balanced';
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Error al obtener método de asignación: ' . $e->getMessage());
         }
         
         return 'balanced';
