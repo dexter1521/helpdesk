@@ -17,7 +17,8 @@ $page_controller = isset($page_controller) ? $page_controller : '';
         link_tag('assets/components/bootstrap/css/bootstrap.min.css').
         link_tag('assets/components/select2/css/select2.min.css').
         link_tag('assets/components/select2/css/select2-bootstrap.min.css').
-        link_tag('assets/helpdeskz/css/helpdesk.css');
+        link_tag('assets/helpdeskz/css/helpdesk.css').
+        link_tag('assets/helpdeskz/css/intel_theme.css');
     $this->renderSection('css_block');
     ?>
     <title><?php $this->renderSection('window_title');?></title>
