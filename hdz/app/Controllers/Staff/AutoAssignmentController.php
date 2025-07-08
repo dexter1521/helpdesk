@@ -67,18 +67,28 @@ class AutoAssignmentController extends BaseController
                     $auto_assignment = $this->request->getPost('auto_assignment');
                     $auto_assignment_method = $this->request->getPost('auto_assignment_method');
                     
-                    // Verificar si las columnas existen en la tabla config
-                    $columns = $db->query("SHOW COLUMNS FROM hdzfv_config LIKE 'auto_assignment%'")->getResultArray();
-                    
-                    if (empty($columns)) {
-                        // Si no existen las columnas, agregar las columnas necesarias
+                    // Verificar columna auto_assignment
+                    $columnAuto = $db->query("SHOW COLUMNS FROM hdzfv_config LIKE 'auto_assignment'")->getRowArray();
+                    if (!$columnAuto) {
                         try {
-                            $db->query("ALTER TABLE `hdzfv_config` 
-                                       ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`");
-                            $db->query("ALTER TABLE `hdzfv_config` 
-                                       ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`");
+                            $db->query(
+                                "ALTER TABLE `hdzfv_config` ADD COLUMN `auto_assignment` tinyint(1) NOT NULL DEFAULT '0' AFTER `kb_latest`"
+                            );
                         } catch (\Exception $e) {
-                            // Si las columnas ya existen, continuar
+                            if (!str_contains($e->getMessage(), 'Duplicate column')) {
+                                throw $e;
+                            }
+                        }
+                    }
+
+                    // Verificar columna auto_assignment_method
+                    $columnMethod = $db->query("SHOW COLUMNS FROM hdzfv_config LIKE 'auto_assignment_method'")->getRowArray();
+                    if (!$columnMethod) {
+                        try {
+                            $db->query(
+                                "ALTER TABLE `hdzfv_config` ADD COLUMN `auto_assignment_method` varchar(20) NOT NULL DEFAULT 'balanced' AFTER `auto_assignment`"
+                            );
+                        } catch (\Exception $e) {
                             if (!str_contains($e->getMessage(), 'Duplicate column')) {
                                 throw $e;
                             }
