@@ -613,13 +613,25 @@ class Tickets
         $search_department = false;
 
         // Verificar si la auto-asignación está habilitada  
-        $autoAssignment = new \App\Libraries\AutoAssignment();
-        $autoAssignmentEnabled = $autoAssignment->isAutoAssignmentEnabled();
+        $settings = Services::settings();
+        $autoAssignmentEnabled = ($settings->get('auto_assignment') == 1);
         
         // Solo aplicar filtro si NO es admin
         if($autoAssignmentEnabled && $staff->getData('admin') == 0){
-            // Con auto-asignación, los agentes SOLO ven tickets asignados específicamente a ellos
+            // Con auto-asignación, los agentes ven:
+            // 1. Tickets asignados específicamente a ellos
+            // 2. Tickets sin asignar (staff_id = 0) de sus departamentos
+            $this->ticketsModel->groupStart();
             $this->ticketsModel->where('tickets.staff_id', $staff->getData('id'));
+            
+            // También incluir tickets sin asignar de los departamentos del agente
+            $this->ticketsModel->orGroupStart();
+            $this->ticketsModel->where('tickets.staff_id', 0);
+            foreach ($staff_departments as $item){
+                $this->ticketsModel->orWhere('tickets.department_id', $item->id);
+            }
+            $this->ticketsModel->groupEnd();
+            $this->ticketsModel->groupEnd();
         } elseif (!$autoAssignmentEnabled) {
             // Lógica tradicional: filtrar solo por departamentos (solo si no hay búsqueda específica)
             if(!$search_department){
