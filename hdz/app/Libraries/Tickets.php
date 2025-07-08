@@ -813,4 +813,47 @@ class Tickets
             'message' => esc($note)
         ]);
     }
+
+    /**
+     * Generate a PDF with a QR code for the given ticket and attach it.
+     *
+     * @param object $ticket      Ticket information
+     * @param int    $message_id  Message ID to associate the attachment
+     */
+    public function generateTicketPdf($ticket, $message_id)
+    {
+        $options = new \chillerlan\QRCode\QROptions([
+            'outputType' => \chillerlan\QRCode\QROutputInterface::GDIMAGE_PNG,
+        ]);
+        $qrCode   = new \chillerlan\QRCode\QRCode($options);
+        $ticketUrl = site_url('tickets/show/' . $ticket->id);
+        $qrImage   = $qrCode->render($ticketUrl);
+
+        $qrPath = WRITEPATH . 'attachments/qr_' . $ticket->id . '.png';
+        file_put_contents($qrPath, $qrImage);
+
+        $pdf = new \FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(0, 10, 'Ticket #' . $ticket->id, 0, 1);
+        $pdf->SetFont('Arial', '', 12);
+        $pdf->Cell(0, 10, $ticket->subject, 0, 1);
+        $pdf->Image($qrPath, 10, 40, 50, 50, 'PNG');
+
+        $fileName    = 'ticket_' . $ticket->id . '.pdf';
+        $encodedName = uniqid('ticket_' . $ticket->id . '_') . '.pdf';
+        $pdfPath     = WRITEPATH . 'attachments/' . $encodedName;
+        $pdf->Output($pdfPath, 'F');
+
+        unlink($qrPath);
+
+        Services::attachments()->addFromTicket(
+            $ticket->id,
+            $message_id,
+            $fileName,
+            $encodedName,
+            filesize($pdfPath),
+            'application/pdf'
+        );
+    }
 }
