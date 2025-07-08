@@ -17,7 +17,8 @@
         link_tag('assets/admin/styles/shards-dashboards.1.1.0.css').
         link_tag('assets/components/daterangepicker/daterangepicker.css').
         link_tag('assets/components/sweetalert/sweetalert2.min.css').
-        link_tag('assets/helpdeskz/css/staff.css');
+        link_tag('assets/helpdeskz/css/staff.css').
+        link_tag('assets/helpdeskz/css/intel_theme.css');
     ?>
 </head>
 

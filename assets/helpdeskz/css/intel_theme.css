@@ -1,0 +1,23 @@
+:root {
+    --primary: #0071C5;
+}
+
+.btn-primary,
+.bg-primary,
+.border-primary,
+.text-primary,
+.badge-primary,
+.alert-primary {
+    background-color: #0071C5 !important;
+    border-color: #0071C5 !important;
+    color: #fff !important;
+}
+
+.nav-pills .nav-link.active,
+.nav-pills .show > .nav-link,
+.nav-outlined-pills .nav-link.active,
+.show > .nav-outlined-pills .nav-link {
+    background-color: #0071C5;
+    border-color: #0071C5;
+    color: #fff;
+}

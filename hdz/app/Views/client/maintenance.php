@@ -16,7 +16,8 @@ $page_controller = isset($page_controller) ? $page_controller : '';
         link_tag('assets/components/bootstrap/css/bootstrap.min.css').
         link_tag('assets/components/select2/css/select2.min.css').
         link_tag('assets/components/select2/css/select2-bootstrap.min.css').
-        link_tag('assets/helpdeskz/css/helpdesk.css');
+        link_tag('assets/helpdeskz/css/helpdesk.css').
+        link_tag('assets/helpdeskz/css/intel_theme.css');
     ?>
     <title><?php echo site_config('windows_title');?></title>
 </head>
