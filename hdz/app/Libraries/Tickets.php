@@ -836,7 +836,6 @@ class Tickets
     }
 
     /**
-<<<<<<< HEAD
      * Generate a PDF with a QR code for the given ticket and attach it.
      *
      * @param object $ticket      Ticket information
