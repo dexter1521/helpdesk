@@ -613,8 +613,8 @@ class Tickets
         $search_department = false;
 
         // Verificar si la auto-asignación está habilitada  
-        $settings = Services::settings();
-        $autoAssignmentEnabled = ($settings->get('auto_assignment') == 1);
+        $settings = new \App\Libraries\Settings();
+        $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
         
         // Solo aplicar filtro si NO es admin
         if($autoAssignmentEnabled && $staff->getData('admin') == 0){
