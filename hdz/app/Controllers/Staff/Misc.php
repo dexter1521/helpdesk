@@ -25,6 +25,37 @@ class Misc extends BaseController
         }
     }
 
+    public function getAgentsByDepartment($department_id)
+    {
+        // Validar que el departamento existe
+        if(!is_numeric($department_id) || $department_id <= 0){
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid department ID']);
+        }
+        
+        // Verificar que el departamento existe
+        $departments = Services::departments();
+        if(!$departments->getByID($department_id)){
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Department not found']);
+        }
+        
+        // Obtener agentes del departamento
+        $staff = Services::staff();
+        $agents = $staff->getAgentsByDepartment($department_id);
+        
+        // Formatear respuesta
+        $formattedAgents = [];
+        foreach($agents as $agent){
+            $formattedAgents[] = [
+                'id' => $agent['id'],
+                'fullname' => $agent['fullname'],
+                'username' => $agent['username'],
+                'display_name' => $agent['fullname'] . ' (' . $agent['username'] . ')'
+            ];
+        }
+        
+        return $this->response->setJSON(['agents' => $formattedAgents]);
+    }
+
     public function uploadEditor()
     {
         $uploadEditor = new UploadEditor();

@@ -103,6 +103,33 @@ if(isset($success_msg)){
             </div>
         </div>
 
+        <?php if (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled && !empty($availableAgents)): ?>
+            <div class="form-group">
+                <label><?php echo lang('Admin.form.assignedAgent');?></label>
+                <select name="assigned_staff_id" id="assigned_staff_id" class="form-control custom-select">
+                    <option value=""><?php echo lang('Admin.form.unassigned');?></option>
+                    <?php foreach ($availableAgents as $agent): ?>
+                        <option value="<?php echo $agent['id']; ?>" <?php echo set_value('assigned_staff_id') == $agent['id'] ? 'selected' : ''; ?>>
+                            <?php echo esc($agent['fullname']); ?> (<?php echo esc($agent['username']); ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="form-text text-muted">
+                    Puedes asignar este ticket a un agente específico. Si no seleccionas ninguno, el ticket quedará sin asignar.
+                </small>
+            </div>
+        <?php elseif (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled): ?>
+            <div class="form-group">
+                <label><?php echo lang('Admin.form.assignedAgent');?></label>
+                <select name="assigned_staff_id" id="assigned_staff_id" class="form-control custom-select">
+                    <option value=""><?php echo lang('Admin.form.unassigned');?></option>
+                </select>
+                <small class="form-text text-muted">
+                    Puedes asignar este ticket a un agente específico. Si no seleccionas ninguno, el ticket quedará sin asignar.
+                </small>
+            </div>
+        <?php endif; ?>
+
         <div class="form-group">
             <label><?php echo lang('Admin.form.subject');?></label>
             <input type="text" name="subject" class="form-control" value="<?php echo set_value('subject');?>" required>
@@ -177,6 +204,59 @@ include __DIR__.'/tinymce.php';
     <script>
         $(document).ready(function () {
             bsCustomFileInput.init();
+            
+            // Actualizar agentes cuando cambia el departamento
+            <?php if (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled): ?>
+            $('select[name="department"]').on('change', function() {
+                var departmentId = $(this).val();
+                var agentSelect = $('#assigned_staff_id');
+                
+                if (departmentId) {
+                    // Mostrar loading
+                    agentSelect.html('<option value="">Cargando agentes...</option>');
+                    agentSelect.prop('disabled', true);
+                    
+                    // Hacer petición AJAX
+                    $.ajax({
+                        url: '<?php echo site_url('staff/ajax/agents/'); ?>' + departmentId,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(response) {
+                            agentSelect.html('<option value=""><?php echo lang('Admin.form.unassigned');?></option>');
+                            
+                            if (response.agents && response.agents.length > 0) {
+                                $.each(response.agents, function(index, agent) {
+                                    agentSelect.append('<option value="' + agent.id + '">' + agent.display_name + '</option>');
+                                });
+                            } else {
+                                agentSelect.append('<option value="" disabled>No hay agentes disponibles en este departamento</option>');
+                            }
+                            
+                            agentSelect.prop('disabled', false);
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error al cargar agentes:', error);
+                            agentSelect.html('<option value=""><?php echo lang('Admin.form.unassigned');?></option>');
+                            agentSelect.append('<option value="" disabled>Error al cargar agentes</option>');
+                            agentSelect.prop('disabled', false);
+                        }
+                    });
+                } else {
+                    // Si no hay departamento seleccionado, limpiar la lista
+                    agentSelect.html('<option value=""><?php echo lang('Admin.form.unassigned');?></option>');
+                    agentSelect.prop('disabled', false);
+                }
+            });
+            
+            // Cargar agentes del departamento seleccionado por defecto al cargar la página
+            <?php if (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled): ?>
+            // Cargar agentes del departamento seleccionado inicialmente
+            var initialDepartment = $('select[name="department"]').val();
+            if (initialDepartment) {
+                $('select[name="department"]').trigger('change');
+            }
+            <?php endif; ?>
+            <?php endif; ?>
         });
         <?php
         if(isset($canned_response)){

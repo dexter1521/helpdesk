@@ -296,6 +296,8 @@ return [
         'avatar' => 'Avatar',
         'deleteAvatar' => 'Borrar avatar',
         'user' => 'Usuario',
+        'assignedAgent' => 'Agente asignado',
+        'unassigned' => 'Sin asignar',
     ],
     'error' => [
         'recordsNotFound' => 'No se encontraron registros. ',

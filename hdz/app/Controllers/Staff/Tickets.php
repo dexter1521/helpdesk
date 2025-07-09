@@ -317,7 +317,12 @@ class Tickets extends BaseController
                 }
                 $name = (Services::request()->getPost('fullname') == '') ? Services::request()->getPost('email') : Services::request()->getPost('fullname');
                 $client_id = $this->client->getClientID($name, Services::request()->getPost('email'));
-                $ticket_id = $tickets->createTicket($client_id, Services::request()->getPost('subject'), Services::request()->getPost('department'), Services::request()->getPost('priority'));
+                
+                // Obtener el staff_id para asignación manual si se proporciona
+                $assignedStaffId = Services::request()->getPost('assigned_staff_id');
+                $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
+                
+                $ticket_id = $tickets->createTicket($client_id, Services::request()->getPost('subject'), Services::request()->getPost('department'), Services::request()->getPost('priority'), $assignedStaffId);
                 $message = Services::request()->getPost('message').$this->staff->getData('signature');
                 $message_id = $tickets->addMessage($ticket_id, $message, $this->staff->getData('id'));
                 $tickets->updateTicket([
@@ -338,6 +343,15 @@ class Tickets extends BaseController
             }
         }
 
+        // Verificar si la auto-asignación está desactivada para mostrar opción de asignación manual
+        $autoAssignmentEnabled = ($this->settings->config('auto_assignment') == 1);
+        $availableAgents = [];
+        
+        // No pre-cargar agentes. Se cargarán dinámicamente via AJAX cuando se seleccione un departamento
+        if (!$autoAssignmentEnabled) {
+            // El selector de agentes se llenará via AJAX cuando se seleccione un departamento
+            $availableAgents = [];
+        }
 
         return view('staff/ticket_new',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
@@ -347,6 +361,8 @@ class Tickets extends BaseController
             'ticket_statuses' => $tickets->statusList(),
             'ticket_priorities' => $tickets->getPriorities(),
             'kb_selector' => Services::kb()->kb_article_selector(),
+            'autoAssignmentEnabled' => $autoAssignmentEnabled,
+            'availableAgents' => $availableAgents
         ]);
     }
 

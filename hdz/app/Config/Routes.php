@@ -57,6 +57,10 @@ $routes->add('submit-ticket', 'Ticket::selectDepartment',[
     'as' => 'submit_ticket',
     'filter' => 'userAuth'
 ]);
+$routes->add('ajax/agents/(:num)', 'Ticket::getAgentsByDepartment/$1',[
+    'as' => 'client_ajax_agents',
+    'filter' => 'userAuth'
+]);
 $routes->add('submit-ticket/(:num)-(:any)', 'Ticket::create/$1',[
     'as' => 'submit_ticket_department',
     'filter' => 'userAuth'
@@ -149,6 +153,9 @@ $routes->group(Helpdesk::STAFF_URI, [
     ]);
     $routes->add('tickets/kb','Staff\Misc::getKB',[
         'as' => 'staff_ajax_kb'
+    ]);
+    $routes->add('ajax/agents/(:num)','Staff\Misc::getAgentsByDepartment/$1',[
+        'as' => 'staff_ajax_agents'
     ]);
     $routes->add('upload/editor', 'Staff\Misc::uploadEditor',[
         'as' => 'staff_editor_uploader',

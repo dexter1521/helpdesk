@@ -29,13 +29,19 @@ class Tickets
         $this->ticketsModel = new \App\Models\Tickets();
         $this->messagesModel = new TicketsMessage();
     }
-    public function createTicket($client_id, $subject, $department_id = 1, $priority_id = 1)
+    public function createTicket($client_id, $subject, $department_id = 1, $priority_id = 1, $assigned_staff_id = null)
     {
         $departments = Services::departments();
         if ($department_id != 1) {
             if (!$departments->isValid($department_id)) {
                 $department_id = 1;
             }
+        }
+        
+        // Determinar el staff_id inicial
+        $staff_id = 0; // Por defecto sin asignar
+        if ($assigned_staff_id !== null && is_numeric($assigned_staff_id) && $assigned_staff_id > 0) {
+            $staff_id = (int)$assigned_staff_id;
         }
         
         $this->ticketsModel->protect(false);
@@ -47,14 +53,16 @@ class Tickets
             'date' => time(),
             'last_update' => time(),
             'last_replier' => 0,
-            'staff_id' => 0, // Inicialmente sin asignar
+            'staff_id' => $staff_id,
         ]);
         $this->ticketsModel->protect(true);
         
         $ticket_id = $this->ticketsModel->getInsertID();
         
-        // Intentar asignación automática si está habilitada
-        $this->attemptAutoAssignment($ticket_id, $department_id);
+        // Solo intentar asignación automática si no se asignó manualmente
+        if ($staff_id === 0) {
+            $this->attemptAutoAssignment($ticket_id, $department_id);
+        }
         
         return $ticket_id;
     }

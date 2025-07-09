@@ -118,7 +118,11 @@ class Ticket extends BaseController
                     $client_id = $this->client->getClientID($this->request->getPost('fullname'), $this->request->getPost('email'));
                 }
 
-                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $department->id);
+                // Obtener el staff_id para asignación manual si se proporciona
+                $assignedStaffId = $this->request->getPost('assigned_staff_id');
+                $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
+
+                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $department->id, 1, $assignedStaffId);
                 //Custom field
                 $tickets->updateTicket([
                     'custom_vars' => serialize($customFieldList)
@@ -142,12 +146,25 @@ class Ticket extends BaseController
             }
         }
 
+        // Verificar si la auto-asignación está desactivada para mostrar opción de asignación manual
+        $settings = new \App\Libraries\Settings();
+        $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
+        $availableAgents = [];
+
+        if (!$autoAssignmentEnabled) {
+            // Si auto-asignación está desactivada, obtener agentes del departamento
+            $staff = Services::staff();
+            $availableAgents = $staff->getAgentsByDepartment($department->id);
+        }
+
         return view('client/ticket_form',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
             'department' => $department,
             'validation' => $validation,
             'captcha' => $reCAPTCHA->display(),
-            'customFields' => $tickets->customFieldsFromDepartment($department->id)
+            'customFields' => $tickets->customFieldsFromDepartment($department->id),
+            'autoAssignmentEnabled' => $autoAssignmentEnabled,
+            'availableAgents' => $availableAgents
         ]);
     }
 
@@ -248,6 +265,44 @@ class Ticket extends BaseController
             'ticket_status' => lang('Client.form.'.$tickets->statusName($info->status)),
             'error_msg' => isset($error_msg) ? $error_msg : null,
         ]);
+    }
+
+    public function getAgentsByDepartment($department_id)
+    {
+        // Validar que el departamento existe
+        if(!is_numeric($department_id) || $department_id <= 0){
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid department ID']);
+        }
+        
+        // Verificar que el departamento existe
+        $departments = Services::departments();
+        if(!$departments->getByID($department_id)){
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Department not found']);
+        }
+        
+        // Verificar que la auto-asignación está desactivada
+        $settings = new \App\Libraries\Settings();
+        $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
+        if($autoAssignmentEnabled){
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Auto-assignment is enabled']);
+        }
+        
+        // Obtener agentes del departamento
+        $staff = Services::staff();
+        $agents = $staff->getAgentsByDepartment($department_id);
+        
+        // Formatear respuesta
+        $formattedAgents = [];
+        foreach($agents as $agent){
+            $formattedAgents[] = [
+                'id' => $agent['id'],
+                'fullname' => $agent['fullname'],
+                'username' => $agent['username'],
+                'display_name' => $agent['fullname'] . ' (' . $agent['username'] . ')'
+            ];
+        }
+        
+        return $this->response->setJSON(['agents' => $formattedAgents]);
     }
 
 

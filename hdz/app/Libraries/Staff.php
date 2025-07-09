@@ -460,4 +460,33 @@ class Staff
             ->where('staff_id', $staffId)
             ->delete();
     }
+
+    /**
+     * Obtener agentes disponibles por departamento para asignación manual
+     */
+    public function getAgentsByDepartment($department_id)
+    {
+        $agents = [];
+        
+        // Obtener agentes que tienen acceso al departamento
+        $staff_list = $this->staffModel->select('id, fullname, username, email, department')
+            ->where('active', 1)
+            ->where('admin', 0) // Excluir administradores
+            ->findAll();
+        
+        foreach ($staff_list as $staff) {
+            // Los departamentos se almacenan como un array serializado
+            $departments = unserialize($staff->department ?: 'a:0:{}');
+            if (is_array($departments) && in_array($department_id, $departments)) {
+                $agents[] = [
+                    'id' => $staff->id,
+                    'fullname' => $staff->fullname,
+                    'username' => $staff->username,
+                    'email' => $staff->email
+                ];
+            }
+        }
+        
+        return $agents;
+    }
 }

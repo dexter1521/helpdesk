@@ -296,6 +296,8 @@ return [
         'avatar' => 'Avatar',
         'deleteAvatar' => 'Delete avatar',
         'user' => 'User',
+        'assignedAgent' => 'Assigned Agent',
+        'unassigned' => 'Unassigned',
     ],
     'error' => [
         'recordsNotFound' => 'Records not found.',
