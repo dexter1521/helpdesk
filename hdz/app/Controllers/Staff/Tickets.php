@@ -19,34 +19,35 @@ class Tickets extends BaseController
     public function manage($page)
     {
         $tickets = new \App\Libraries\Tickets();
+        $request = Services::request();
 
-        if($this->request->getPost('action')){
-            if(!is_array($this->request->getPost('ticket_id'))) {
+        if($request->getPost('action')){
+            if(!is_array($request->getPost('ticket_id'))) {
                 $error_msg = lang('Admin.error.noItemsSelected');
             }else{
-                foreach ($this->request->getPost('ticket_id') as $ticket_id){
+                foreach ($request->getPost('ticket_id') as $ticket_id){
                     if(is_numeric($ticket_id)){
-                        if($this->request->getPost('action') == 'remove'){
+                        if($request->getPost('action') == 'remove'){
                             $tickets->deleteTicket($ticket_id);
-                        }elseif($this->request->getPost('action') == 'update'){
-                            if(is_numeric($this->request->getPost('department'))){
-                                if(Services::departments()->isValid($this->request->getPost('department'))){
+                        }elseif($request->getPost('action') == 'update'){
+                            if(is_numeric($request->getPost('department'))){
+                                if(Services::departments()->isValid($request->getPost('department'))){
                                     $tickets->updateTicket([
-                                        'department_id' => $this->request->getPost('department')
+                                        'department_id' => $request->getPost('department')
                                     ], $ticket_id);
                                 }
                             }
-                            if(is_numeric($this->request->getPost('status'))){
-                                if(array_key_exists($this->request->getPost('status'), $tickets->statusList())){
+                            if(is_numeric($request->getPost('status'))){
+                                if(array_key_exists($request->getPost('status'), $tickets->statusList())){
                                     $tickets->updateTicket([
-                                        'status' => $this->request->getPost('status')
+                                        'status' => $request->getPost('status')
                                     ], $ticket_id);
                                 }
                             }
-                            if(is_numeric($this->request->getPost('priority'))){
-                                if($tickets->existPriority($this->request->getPost('priority'))){
+                            if(is_numeric($request->getPost('priority'))){
+                                if($tickets->existPriority($request->getPost('priority'))){
                                     $tickets->updateTicket([
-                                        'priority_id' => $this->request->getPost('priority')
+                                        'priority_id' => $request->getPost('priority')
                                     ], $ticket_id);
                                 }
                             }
@@ -88,8 +89,8 @@ class Tickets extends BaseController
         }
         $attachments = Services::attachments();
         #Download
-        if($this->request->getGet('download')){
-            if(!$file = $attachments->getRow(['id' => $this->request->getGet('download'),'ticket_id' => $ticket->id])){
+        if(Services::request()->getGet('download')){
+            if(!$file = $attachments->getRow(['id' => Services::request()->getGet('download'),'ticket_id' => $ticket->id])){
                 return view('client/error',[
                     'title' => lang('Client.error.fileNotFound'),
                     'body' => lang('Client.error.fileNotFoundMsg'),
@@ -98,9 +99,9 @@ class Tickets extends BaseController
             }
             return $attachments->download($file);
         }
-        elseif (is_numeric($this->request->getGet('delete_file'))){
+        elseif (is_numeric(Services::request()->getGet('delete_file'))){
             if(!$file = $attachments->getRow([
-                'id' => $this->request->getGet('delete_file'),
+                'id' => Services::request()->getGet('delete_file'),
                 'ticket_id' => $ticket->id
             ])){
                 return redirect()->to(current_url());
@@ -111,7 +112,7 @@ class Tickets extends BaseController
             }
         }
         //Update Information
-        if($this->request->getPost('do') == 'update_information') {
+        if(Services::request()->getPost('do') == 'update_information') {
             $validation = Services::validation();
             $validation->setRules([
                 'department' => 'required|is_natural_no_zero|is_not_unique[departments.id]',
@@ -138,17 +139,17 @@ class Tickets extends BaseController
                     'is_natural' => lang('Admin.error.invalidAgent')
                 ]
             ]);
-            if($validation->withRequest($this->request)->run() == false){
+            if($validation->withRequest(Services::request())->run() == false){
                 $error_msg = $validation->listErrors();
             }else{
                 // Obtener el staff_id a asignar (0 significa sin asignar)
-                $assignedStaffId = $this->request->getPost('assigned_staff');
+                $assignedStaffId = Services::request()->getPost('assigned_staff');
                 $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : 0;
                 
                 $tickets->updateTicket([
-                    'department_id' => $this->request->getPost('department'),
-                    'status' => $this->request->getPost('status'),
-                    'priority_id' => $this->request->getPost('priority'),
+                    'department_id' => Services::request()->getPost('department'),
+                    'status' => Services::request()->getPost('status'),
+                    'priority_id' => Services::request()->getPost('priority'),
                     'staff_id' => $assignedStaffId,
                 ], $ticket->id);
                 $this->session->setFlashdata('ticket_update', 'Ticket updated.');
@@ -156,7 +157,7 @@ class Tickets extends BaseController
             }
         }
         //Reply Ticket
-        elseif ($this->request->getPost('do') == 'reply')
+        elseif (Services::request()->getPost('do') == 'reply')
         {
             $validation = Services::validation();
             $validation->setRule('message','message','required',[
@@ -173,7 +174,7 @@ class Tickets extends BaseController
                 ]);
             }
 
-            if($validation->withRequest($this->request)->run() == false){
+            if($validation->withRequest(Services::request())->run() == false){
                 $error_msg = $validation->listErrors();
             }else{
                 if ($this->settings->config('ticket_attachment')) {
@@ -182,7 +183,7 @@ class Tickets extends BaseController
                     }
                 }
                 //Message
-                $message = $this->request->getPost('message').$this->staff->getData('signature');
+                $message = Services::request()->getPost('message').$this->staff->getData('signature');
                 $message_id = $tickets->addMessage($ticket->id, $message, $this->staff->getData('id'));
 
                 //File
@@ -197,43 +198,43 @@ class Tickets extends BaseController
                 return redirect()->to(current_url());
             }
         }
-        elseif ($this->request->getPost('do') == 'delete_note'){
+        elseif (Services::request()->getPost('do') == 'delete_note'){
             $validation = Services::validation();
             $validation->setRule('note_id','note_id','required|is_natural_no_zero');
-            if($validation->withRequest($this->request)->run() == false) {
+            if($validation->withRequest(Services::request())->run() == false) {
                 $error_msg = lang('Admin.tickets.invalidRequest');
-            }elseif(!$note = $tickets->getNote($this->request->getPost('note_id'))) {
+            }elseif(!$note = $tickets->getNote(Services::request()->getPost('note_id'))) {
                 $error_msg = lang('Admin.tickets.invalidRequest');
             }elseif ($this->staff->getData('admin') == 1 || $this->staff->getData('id') == $note->staff_id){
-                $tickets->deleteNote($ticket->id, $this->request->getPost('note_id'));
+                $tickets->deleteNote($ticket->id, Services::request()->getPost('note_id'));
                 $this->session->setFlashdata('ticket_update', lang('Admin.tickets.noteRemoved'));
                 return redirect()->to(current_url());
             }else{
                 $error_msg = lang('Admin.tickets.invalidRequest');
             }
         }
-        elseif ($this->request->getPost('do') == 'edit_note'){
+        elseif (Services::request()->getPost('do') == 'edit_note'){
             $validation = Services::validation();
             $validation->setRule('note_id','note_id','required|is_natural_no_zero');
-            if($validation->withRequest($this->request)->run() == false) {
+            if($validation->withRequest(Services::request())->run() == false) {
                 $error_msg = lang('Admin.tickets.invalidRequest');
-            }elseif ($this->request->getPost('new_note') == ''){
+            }elseif (Services::request()->getPost('new_note') == ''){
                 $error_msg = lang('Admin.tickets.enterNote');
-            }elseif(!$note = $tickets->getNote($this->request->getPost('note_id'))) {
+            }elseif(!$note = $tickets->getNote(Services::request()->getPost('note_id'))) {
                 $error_msg = lang('Admin.tickets.invalidRequest');
             }elseif ($this->staff->getData('admin') == 1 || $this->staff->getData('id') == $note->staff_id){
-                $tickets->updateNote($this->request->getPost('new_note'), $note->id);
+                $tickets->updateNote(Services::request()->getPost('new_note'), $note->id);
                 $this->session->setFlashdata('ticket_update', lang('Admin.tickets.noteUpdated'));
                 return redirect()->to(current_url());
             }else{
                 $error_msg = lang('Admin.tickets.invalidRequest');
             }
         }
-        elseif ($this->request->getPost('do') == 'save_notes'){
-            if($this->request->getPost('noteBook') == ''){
+        elseif (Services::request()->getPost('do') == 'save_notes'){
+            if(Services::request()->getPost('noteBook') == ''){
                 $error_msg = lang('Admin.tickets.enterNote');
             }else{
-                $tickets->addNote($ticket->id, $this->staff->getData('id'), $this->request->getPost('noteBook'));
+                $tickets->addNote($ticket->id, $this->staff->getData('id'), Services::request()->getPost('noteBook'));
                 $this->session->setFlashdata('ticket_update', lang('Admin.tickets.notesSaved'));
                 return redirect()->to(current_url());
             }
@@ -273,7 +274,7 @@ class Tickets extends BaseController
     public function create()
     {
         $tickets = Services::tickets();
-        if($this->request->getPost('do') == 'submit')
+        if(Services::request()->getPost('do') == 'submit')
         {
             $validation = Services::validation();
             $validation->setRules([
@@ -320,7 +321,7 @@ class Tickets extends BaseController
                 ]);
             }
 
-            if($validation->withRequest($this->request)->run() == false) {
+            if($validation->withRequest(Services::request())->run() == false) {
                 $error_msg = $validation->listErrors();
             }elseif (defined('HDZDEMO')){
                 $error_msg = 'This is not possible in demo version.';
@@ -331,19 +332,19 @@ class Tickets extends BaseController
                         $files = $uploaded_files;
                     }
                 }
-                $name = ($this->request->getPost('fullname') == '') ? $this->request->getPost('email') : $this->request->getPost('fullname');
-                $client_id = $this->client->getClientID($name, $this->request->getPost('email'));
+                $name = (Services::request()->getPost('fullname') == '') ? Services::request()->getPost('email') : Services::request()->getPost('fullname');
+                $client_id = $this->client->getClientID($name, Services::request()->getPost('email'));
                 
                 // Obtener asignación manual si se proporcionó
-                $assignedStaffId = $this->request->getPost('assigned_staff_id');
+                $assignedStaffId = Services::request()->getPost('assigned_staff_id');
                 $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
                 
-                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $this->request->getPost('department'), $this->request->getPost('priority'), $assignedStaffId);
-                $message = $this->request->getPost('message').$this->staff->getData('signature');
+                $ticket_id = $tickets->createTicket($client_id, Services::request()->getPost('subject'), Services::request()->getPost('department'), Services::request()->getPost('priority'), $assignedStaffId);
+                $message = Services::request()->getPost('message').$this->staff->getData('signature');
                 $message_id = $tickets->addMessage($ticket_id, $message, $this->staff->getData('id'));
                 $tickets->updateTicket([
                     'last_replier' => $this->staff->getData('id'),
-                    'status' => $this->request->getPost('status')
+                    'status' => Services::request()->getPost('status')
                 ], $ticket_id);
                 //File
                 if(isset($files)){
@@ -381,8 +382,8 @@ class Tickets extends BaseController
     public function cannedResponses()
     {
         $tickets = Services::tickets();
-        if($this->request->getPost('do') == 'remove'){
-            if(!$canned = $tickets->getCannedResponse($this->request->getPost('msgID'))){
+        if(Services::request()->getPost('do') == 'remove'){
+            if(!$canned = $tickets->getCannedResponse(Services::request()->getPost('msgID'))){
                 $error_msg = lang('Admin.error.invalidCannedResponse');
             }elseif(!$this->staff->getData('admin') && $canned->staff_id != $this->staff->getData('id')) {
                 $error_msg = lang('Admin.error.invalidCannedResponse');
@@ -395,14 +396,14 @@ class Tickets extends BaseController
             }
         }
 
-        if($this->request->getGet('action') && is_numeric($this->request->getGet('msgID'))){
-            if(!$canned = $tickets->getCannedResponse($this->request->getGet('msgID'))){
+        if(Services::request()->getGet('action') && is_numeric(Services::request()->getGet('msgID'))){
+            if(!$canned = $tickets->getCannedResponse(Services::request()->getGet('msgID'))){
                 $error_msg = lang('Admin.error.invalidCannedResponse');
             }elseif (defined('HDZDEMO')){
                 $error_msg = 'This is not possible in demo version.';
             }else{
                 $cannedModel = new CannedModel();
-                switch ($this->request->getGet('action')){
+                switch (Services::request()->getGet('action')){
                     case 'move_up':
                         if($canned->position > 1){
                             $cannedModel->protect(false);
@@ -444,7 +445,7 @@ class Tickets extends BaseController
         if(!$canned = $tickets->getCannedResponse($canned_id)){
             return redirect()->route('staff_canned');
         }
-        if($this->request->getPost('do') == 'submit')
+        if(Services::request()->getPost('do') == 'submit')
         {
             $validation = Services::validation();
             $validation->setRules([
@@ -458,14 +459,14 @@ class Tickets extends BaseController
                     'required' => lang('Admin.error.enterMessage')
                 ]
             ]);
-            if($validation->withRequest($this->request)->run() == false){
+            if($validation->withRequest(Services::request())->run() == false){
                 $error_msg = $validation->listErrors();
             }elseif (defined('HDZDEMO')){
                 $error_msg = 'This is not possible in demo version.';
             }else{
                 $tickets->updateCanned([
-                    'title' => esc($this->request->getPost('title')),
-                    'message' => $this->request->getPost('message'),
+                    'title' => esc(Services::request()->getPost('title')),
+                    'message' => Services::request()->getPost('message'),
                     'last_update' => time()
                 ], $canned_id);
                 $this->session->setFlashdata('canned_update','Canned response has been updated.');
@@ -486,7 +487,7 @@ class Tickets extends BaseController
 
     public function newCannedResponse()
     {
-        if($this->request->getPost('do') == 'submit'){
+        if(Services::request()->getPost('do') == 'submit'){
             $validation = Services::validation();
             $validation->setRules([
                 'title' => 'required',
@@ -499,13 +500,13 @@ class Tickets extends BaseController
                     'required' => lang('Admin.error.enterMessage')
                 ]
             ]);
-            if($validation->withRequest($this->request)->run() == false){
+            if($validation->withRequest(Services::request())->run() == false){
                 $error_msg = $validation->listErrors();
             }elseif (defined('HDZDEMO')){
                 $error_msg = 'This is not possible in demo version.';
             }else{
                 $tickets = Services::tickets();
-                $tickets->insertCanned($this->request->getPost('title'), $this->request->getPost('message'));
+                $tickets->insertCanned(Services::request()->getPost('title'), Services::request()->getPost('message'));
                 $this->session->setFlashdata('canned_update', 'Canned response has been inserted.');
                 return redirect()->route('staff_canned');
             }
