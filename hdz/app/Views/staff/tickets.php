@@ -169,6 +169,7 @@ echo form_input([
                     <th><?php echo sort_link('department',lang('Admin.form.department'));?></th>
                     <th><?php echo sort_link('priority',lang('Admin.form.priority'));?></th>
                     <th><?php echo sort_link('status',lang('Admin.form.status'));?></th>
+                    <th><?php echo lang('Admin.form.assignedAgent');?></th>
                 </tr>
                 </thead>
                 <?php if(!$tickets_result):?>
@@ -232,6 +233,24 @@ echo form_input([
                                         break;
                                 }
                                 ?>
+                            </td>
+                            <td>
+                                <?php if($item->staff_id > 0 && !empty($item->assigned_agent_name)): ?>
+                                    <div class="text-success">
+                                        <i class="fa fa-user"></i> <?php echo esc($item->assigned_agent_name);?>
+                                    </div>
+                                    <small class="text-muted">
+                                        <?php if($item->assignment_type === 'auto'): ?>
+                                            <i class="fa fa-robot"></i> Auto
+                                        <?php else: ?>
+                                            <i class="fa fa-hand-paper-o"></i> Manual
+                                        <?php endif; ?>
+                                    </small>
+                                <?php else: ?>
+                                    <div class="text-muted">
+                                        <i class="fa fa-user-times"></i> <?php echo lang('Admin.form.unassigned');?>
+                                    </div>
+                                <?php endif; ?>
                             </td>
                         </tr>
                     <?php endforeach;?>
