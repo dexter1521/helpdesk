@@ -296,6 +296,10 @@ return [
         'avatar' => 'Avatar',
         'deleteAvatar' => 'Delete avatar',
         'user' => 'User',
+        'assignToAgent' => 'Assign to agent',
+        'optional' => 'optional',
+        'selectAgent' => 'Select an agent...',
+        'assignToAgentHelp' => 'You can optionally assign this ticket to a specific agent. If left blank, the system will handle assignment based on current settings.',
     ],
     'error' => [
         'recordsNotFound' => 'Records not found.',
@@ -347,7 +351,8 @@ return [
         'wrongExistingPassword' => 'Your existing password is incorrect.',
         'passwordTooShort' => 'The new password must be at least 6 characters in length.',
         'selectDepartment' => 'Select a department.',
-        'departmentNotExist' => 'Selected department does not exist.'
+        'departmentNotExist' => 'Selected department does not exist.',
+        'invalidAgent' => 'Selected agent is not valid.',
     ],
     'twoFactor' => [
         'title' => 'Two-Factor Authentication',

@@ -37,14 +37,14 @@ class Tickets
                 $department_id = 1;
             }
         }
-        
+
         // Determinar staff_id inicial
         $initial_staff_id = 0; // Por defecto sin asignar
         if ($manual_staff_id !== null && $manual_staff_id > 0) {
             // Si se proporciona asignación manual, usarla
             $initial_staff_id = (int)$manual_staff_id;
         }
-        
+
         $this->ticketsModel->protect(false);
         $this->ticketsModel->insert([
             'department_id' => $department_id,
@@ -57,14 +57,14 @@ class Tickets
             'staff_id' => $initial_staff_id,
         ]);
         $this->ticketsModel->protect(true);
-        
+
         $ticket_id = $this->ticketsModel->getInsertID();
-        
+
         // Solo intentar asignación automática si no se asignó manualmente
         if ($manual_staff_id === null) {
             $this->attemptAutoAssignment($ticket_id, $department_id);
         }
-        
+
         return $ticket_id;
     }
 
@@ -624,28 +624,28 @@ class Tickets
         // Verificar si la auto-asignación está habilitada  
         $settings = new \App\Libraries\Settings();
         $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
-        
+
         // Solo aplicar filtro si NO es admin
-        if($autoAssignmentEnabled && $staff->getData('admin') == 0){
+        if ($autoAssignmentEnabled && $staff->getData('admin') == 0) {
             // Con auto-asignación, los agentes ven:
             // 1. Tickets asignados específicamente a ellos
             // 2. Tickets sin asignar (staff_id = 0) de sus departamentos
             $this->ticketsModel->groupStart();
             $this->ticketsModel->where('tickets.staff_id', $staff->getData('id'));
-            
+
             // También incluir tickets sin asignar de los departamentos del agente
             $this->ticketsModel->orGroupStart();
             $this->ticketsModel->where('tickets.staff_id', 0);
-            foreach ($staff_departments as $item){
+            foreach ($staff_departments as $item) {
                 $this->ticketsModel->orWhere('tickets.department_id', $item->id);
             }
             $this->ticketsModel->groupEnd();
             $this->ticketsModel->groupEnd();
         } elseif (!$autoAssignmentEnabled) {
             // Lógica tradicional: filtrar solo por departamentos (solo si no hay búsqueda específica)
-            if(!$search_department){
+            if (!$search_department) {
                 $this->ticketsModel->groupStart();
-                foreach ($staff_departments as $item){
+                foreach ($staff_departments as $item) {
                     $this->ticketsModel->orWhere('tickets.department_id', $item->id);
                 }
                 $this->ticketsModel->groupEnd();
@@ -653,7 +653,7 @@ class Tickets
         }
         // Si es admin Y auto-assignment está habilitado, NO aplicar ningún filtro (ve todo)
 
-        switch($page){
+        switch ($page) {
             case 'search':
                 if ($request->getGet('department')) {
                     $key = array_search($request->getGet('department'), array_column($staff_departments, 'id'));
@@ -725,7 +725,7 @@ class Tickets
                 break;
         }
 
-        if($request->getGet('sort')){
+        if ($request->getGet('sort')) {
             $sort_list = [
                 'id' => 'tickets.id',
                 'subject' => 'tickets.subject',
@@ -1035,15 +1035,15 @@ class Tickets
         try {
             // Cargar la biblioteca de asignación automática
             $autoAssignment = new \App\Libraries\AutoAssignment();
-            
+
             // Intentar asignar el ticket
             $assigned_staff_id = $autoAssignment->assignTicket($ticket_id, $department_id);
-            
+
             if ($assigned_staff_id) {
                 log_message('info', "Ticket #{$ticket_id} asignado automáticamente al staff #{$assigned_staff_id}");
                 return $assigned_staff_id;
             }
-            
+
             return false;
         } catch (\Exception $e) {
             log_message('error', 'Error en asignación automática: ' . $e->getMessage());
@@ -1063,11 +1063,11 @@ class Tickets
         $this->ticketsModel->protect(false);
         $result = $this->ticketsModel->update($ticket_id, ['staff_id' => $staff_id]);
         $this->ticketsModel->protect(true);
-        
+
         if ($result) {
             log_message('info', "Ticket #{$ticket_id} reasignado manualmente al staff #{$staff_id}");
         }
-        
+
         return $result;
     }
 }

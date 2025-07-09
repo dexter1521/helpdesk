@@ -116,7 +116,8 @@ class Tickets extends BaseController
             $validation->setRules([
                 'department' => 'required|is_natural_no_zero|is_not_unique[departments.id]',
                 'status' => 'required|is_natural|in_list[' . implode(',', array_keys($tickets->statusList())) . ']',
-                'priority' => 'required|is_natural_no_zero|is_not_unique[priority.id]'
+                'priority' => 'required|is_natural_no_zero|is_not_unique[priority.id]',
+                'assigned_staff' => 'permit_empty|is_natural'
             ], [
                 'department' => [
                     'required' => lang('Admin.error.invalidDepartment'),
@@ -132,15 +133,23 @@ class Tickets extends BaseController
                     'required' => lang('Admin.error.invalidPriority'),
                     'is_natural_no_zero' => lang('Admin.error.invalidPriority'),
                     'is_not_unique' => lang('Admin.error.invalidPriority')
+                ],
+                'assigned_staff' => [
+                    'is_natural' => lang('Admin.error.invalidAgent')
                 ]
             ]);
             if($validation->withRequest($this->request)->run() == false){
                 $error_msg = $validation->listErrors();
             }else{
+                // Obtener el staff_id a asignar (0 significa sin asignar)
+                $assignedStaffId = $this->request->getPost('assigned_staff');
+                $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : 0;
+                
                 $tickets->updateTicket([
                     'department_id' => $this->request->getPost('department'),
                     'status' => $this->request->getPost('status'),
                     'priority_id' => $this->request->getPost('priority'),
+                    'staff_id' => $assignedStaffId,
                 ], $ticket->id);
                 $this->session->setFlashdata('ticket_update', 'Ticket updated.');
                 return redirect()->to(current_url());
@@ -238,6 +247,13 @@ class Tickets extends BaseController
         if(defined('HDZDEMO')){
             $ticket->email = '[Hidden in demo]';
         }
+
+        // Obtener lista de agentes para asignación
+        $availableAgents = $this->staff->getAgents();
+        $availableAgents = array_filter($availableAgents, function($agent) {
+            return $agent->active == 1 && $agent->admin == 0;
+        });
+
         return view('staff/ticket_view',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
             'success_msg' => isset($success_msg) ? $success_msg : null,
@@ -249,7 +265,8 @@ class Tickets extends BaseController
             'ticket_statuses' => $tickets->statusList(),
             'ticket_priorities' => $tickets->getPriorities(),
             'kb_selector' => Services::kb()->kb_article_selector(),
-            'notes' => $tickets->getNotes($ticket->id)
+            'notes' => $tickets->getNotes($ticket->id),
+            'staff_list' => $availableAgents,
         ]);
     }
 
@@ -316,7 +333,12 @@ class Tickets extends BaseController
                 }
                 $name = ($this->request->getPost('fullname') == '') ? $this->request->getPost('email') : $this->request->getPost('fullname');
                 $client_id = $this->client->getClientID($name, $this->request->getPost('email'));
-                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $this->request->getPost('department'), $this->request->getPost('priority'));
+                
+                // Obtener asignación manual si se proporcionó
+                $assignedStaffId = $this->request->getPost('assigned_staff_id');
+                $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
+                
+                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $this->request->getPost('department'), $this->request->getPost('priority'), $assignedStaffId);
                 $message = $this->request->getPost('message').$this->staff->getData('signature');
                 $message_id = $tickets->addMessage($ticket_id, $message, $this->staff->getData('id'));
                 $tickets->updateTicket([
@@ -337,6 +359,12 @@ class Tickets extends BaseController
             }
         }
 
+        // Obtener agentes disponibles para asignación manual
+        $availableAgents = $this->staff->getAgents();
+        // Filtrar solo agentes activos (excluyendo administradores si es necesario)
+        $availableAgents = array_filter($availableAgents, function($agent) {
+            return $agent->active == 1 && $agent->admin == 0;
+        });
 
         return view('staff/ticket_new',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
@@ -346,6 +374,7 @@ class Tickets extends BaseController
             'ticket_statuses' => $tickets->statusList(),
             'ticket_priorities' => $tickets->getPriorities(),
             'kb_selector' => Services::kb()->kb_article_selector(),
+            'availableAgents' => $availableAgents,
         ]);
     }
 

@@ -46,7 +46,7 @@ $this->section('content');
                     </label>
                     <input type="text" value="<?php echo $department->name;?>" class="form-control" readonly>
                 </div>
-                
+
                 <?php if (!$autoAssignmentEnabled && !empty($availableAgents)): ?>
                     <div class="form-group">
                         <label>
@@ -65,7 +65,7 @@ $this->section('content');
                         </small>
                     </div>
                 <?php endif;?>
-                
+
                 <?php
                 if(isset($customFields)){
                     foreach ($customFields as $customField){

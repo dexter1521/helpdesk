@@ -101,6 +101,24 @@ if(isset($success_msg)){
                 </div>
 
             </div>
+            <?php if (!empty($availableAgents)): ?>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label><?php echo lang('Admin.form.assignToAgent');?> <small class="text-muted">(<?php echo lang('Admin.form.optional');?>)</small></label>
+                    <select name="assigned_staff_id" class="form-control custom-select">
+                        <option value=""><?php echo lang('Admin.form.selectAgent');?></option>
+                        <?php foreach ($availableAgents as $agent): ?>
+                            <option value="<?php echo $agent->id;?>" <?php echo set_select('assigned_staff_id', $agent->id);?>>
+                                <?php echo esc($agent->fullname);?>
+                            </option>
+                        <?php endforeach;?>
+                    </select>
+                    <small class="form-text text-muted">
+                        <?php echo lang('Admin.form.assignToAgentHelp');?>
+                    </small>
+                </div>
+            </div>
+            <?php endif;?>
         </div>
 
         <div class="form-group">
