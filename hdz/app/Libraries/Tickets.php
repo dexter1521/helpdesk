@@ -620,38 +620,49 @@ class Tickets
         $request = Services::request();
         $staff_departments = $staff->getDepartments();
         $search_department = false;
+        $isAdmin = ($staff->getData('admin') == 1);
 
         // Verificar si la auto-asignación está habilitada  
         $settings = new \App\Libraries\Settings();
         $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
 
-        // Solo aplicar filtro si NO es admin
-        if ($autoAssignmentEnabled && $staff->getData('admin') == 0) {
-            // Con auto-asignación, los agentes ven:
-            // 1. Tickets asignados específicamente a ellos
-            // 2. Tickets sin asignar (staff_id = 0) de sus departamentos
-            $this->ticketsModel->groupStart();
-            $this->ticketsModel->where('tickets.staff_id', $staff->getData('id'));
-
-            // También incluir tickets sin asignar de los departamentos del agente
-            $this->ticketsModel->orGroupStart();
-            $this->ticketsModel->where('tickets.staff_id', 0);
-            foreach ($staff_departments as $item) {
-                $this->ticketsModel->orWhere('tickets.department_id', $item->id);
+        // Determinar si se busca por departamento específico (para evitar filtros duplicados)
+        if ($page == 'search' && $request->getGet('department')) {
+            $key = array_search($request->getGet('department'), array_column($staff_departments, 'id'));
+            if (is_numeric($key)) {
+                $search_department = true;
             }
-            $this->ticketsModel->groupEnd();
-            $this->ticketsModel->groupEnd();
-        } elseif (!$autoAssignmentEnabled) {
-            // Lógica tradicional: filtrar solo por departamentos (solo si no hay búsqueda específica)
-            if (!$search_department) {
+        }
+
+        // Aplicar filtros de visibilidad solo si NO es admin
+        if (!$isAdmin) {
+            if ($autoAssignmentEnabled) {
+                // Con auto-asignación, los agentes ven:
+                // 1. Tickets asignados específicamente a ellos
+                // 2. Tickets sin asignar (staff_id = 0) de sus departamentos
                 $this->ticketsModel->groupStart();
+                $this->ticketsModel->where('tickets.staff_id', $staff->getData('id'));
+
+                // También incluir tickets sin asignar de los departamentos del agente
+                $this->ticketsModel->orGroupStart();
+                $this->ticketsModel->where('tickets.staff_id', 0);
                 foreach ($staff_departments as $item) {
                     $this->ticketsModel->orWhere('tickets.department_id', $item->id);
                 }
                 $this->ticketsModel->groupEnd();
+                $this->ticketsModel->groupEnd();
+            } else {
+                // Lógica tradicional: filtrar solo por departamentos (solo si no hay búsqueda específica por departamento)
+                if (!$search_department) {
+                    $this->ticketsModel->groupStart();
+                    foreach ($staff_departments as $item) {
+                        $this->ticketsModel->orWhere('tickets.department_id', $item->id);
+                    }
+                    $this->ticketsModel->groupEnd();
+                }
             }
         }
-        // Si es admin Y auto-assignment está habilitado, NO aplicar ningún filtro (ve todo)
+        // Si es admin, NO aplicar ningún filtro de visibilidad (ve todos los tickets)
 
         switch ($page) {
             case 'search':
@@ -659,7 +670,6 @@ class Tickets
                     $key = array_search($request->getGet('department'), array_column($staff_departments, 'id'));
                     if (is_numeric($key)) {
                         $this->ticketsModel->where('tickets.department_id', $staff_departments[$key]->id);
-                        $search_department = true;
                     }
                 }
 
@@ -744,7 +754,12 @@ class Tickets
         $db = Database::connect();
         $result = $this->ticketsModel->select('tickets.*, u.fullname, d.name as department_name,
         p.name as priority_name, p.color as priority_color, 
-        IF(last_replier=0, "", (SELECT username FROM ' . $db->prefixTable('staff') . ' WHERE id=last_replier)) as staff_username')
+        IF(last_replier=0, "", (SELECT username FROM ' . $db->prefixTable('staff') . ' WHERE id=last_replier)) as staff_username,
+        (SELECT fullname FROM ' . $db->prefixTable('staff') . ' WHERE id=tickets.staff_id) as assigned_agent_name,
+        CASE 
+            WHEN tickets.staff_id > 0 THEN "manual"
+            ELSE "auto"
+        END as assignment_type')
             ->join('users as u', 'u.id=tickets.user_id')
             ->join('departments as d', 'd.id=tickets.department_id')
             ->join('priority as p', 'p.id=tickets.priority_id')

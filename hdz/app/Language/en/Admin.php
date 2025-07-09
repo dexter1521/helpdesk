@@ -300,6 +300,8 @@ return [
         'optional' => 'optional',
         'selectAgent' => 'Select an agent...',
         'assignToAgentHelp' => 'You can optionally assign this ticket to a specific agent. If left blank, the system will handle assignment based on current settings.',
+        'assignedAgent' => 'Assigned Agent',
+        'unassigned' => 'Unassigned',
     ],
     'error' => [
         'recordsNotFound' => 'Records not found.',
