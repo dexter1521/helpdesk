@@ -335,7 +335,7 @@ class Tickets extends BaseController
                 $name = (Services::request()->getPost('fullname') == '') ? Services::request()->getPost('email') : Services::request()->getPost('fullname');
                 $client_id = $this->client->getClientID($name, Services::request()->getPost('email'));
                 
-                // Obtener asignación manual si se proporcionó
+                // Obtener el staff_id para asignación manual si se proporciona
                 $assignedStaffId = Services::request()->getPost('assigned_staff_id');
                 $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
                 
@@ -360,12 +360,15 @@ class Tickets extends BaseController
             }
         }
 
-        // Obtener agentes disponibles para asignación manual
-        $availableAgents = $this->staff->getAgents();
-        // Filtrar solo agentes activos (excluyendo administradores si es necesario)
-        $availableAgents = array_filter($availableAgents, function($agent) {
-            return $agent->active == 1 && $agent->admin == 0;
-        });
+        // Verificar si la auto-asignación está desactivada para mostrar opción de asignación manual
+        $autoAssignmentEnabled = ($this->settings->config('auto_assignment') == 1);
+        $availableAgents = [];
+        
+        // No pre-cargar agentes. Se cargarán dinámicamente via AJAX cuando se seleccione un departamento
+        if (!$autoAssignmentEnabled) {
+            // El selector de agentes se llenará via AJAX cuando se seleccione un departamento
+            $availableAgents = [];
+        }
 
         return view('staff/ticket_new',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
@@ -375,7 +378,8 @@ class Tickets extends BaseController
             'ticket_statuses' => $tickets->statusList(),
             'ticket_priorities' => $tickets->getPriorities(),
             'kb_selector' => Services::kb()->kb_article_selector(),
-            'availableAgents' => $availableAgents,
+            'autoAssignmentEnabled' => $autoAssignmentEnabled,
+            'availableAgents' => $availableAgents
         ]);
     }
 

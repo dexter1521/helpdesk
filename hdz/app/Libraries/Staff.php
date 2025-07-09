@@ -461,30 +461,31 @@ class Staff
     }
 
     /**
-     * Obtiene agentes activos que pertenecen a un departamento específico
-     * @param int $department_id ID del departamento
-     * @return array Lista de agentes del departamento
+     * Obtener agentes disponibles por departamento para asignación manual
      */
     public function getAgentsByDepartment($department_id)
     {
-        $agents = $this->staffModel
+        $agents = [];
+        
+        // Obtener agentes que tienen acceso al departamento
+        $staff_list = $this->staffModel->select('id, fullname, username, email, department')
             ->where('active', 1)
             ->where('admin', 0) // Excluir administradores
-            ->orderBy('fullname', 'ASC')
-            ->get()
-            ->getResult();
-
-        $departmentAgents = [];
-
-        foreach ($agents as $agent) {
-            if (!empty($agent->department)) {
-                $departments = unserialize($agent->department);
-                if (is_array($departments) && in_array($department_id, $departments)) {
-                    $departmentAgents[] = $agent;
-                }
+            ->findAll();
+        
+        foreach ($staff_list as $staff) {
+            // Los departamentos se almacenan como un array serializado
+            $departments = unserialize($staff->department ?: 'a:0:{}');
+            if (is_array($departments) && in_array($department_id, $departments)) {
+                $agents[] = [
+                    'id' => $staff->id,
+                    'fullname' => $staff->fullname,
+                    'username' => $staff->username,
+                    'email' => $staff->email
+                ];
             }
         }
-
-        return $departmentAgents;
+        
+        return $agents;
     }
 }

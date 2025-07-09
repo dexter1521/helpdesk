@@ -119,7 +119,7 @@ class Ticket extends BaseController
                     $client_id = $this->client->getClientID($this->request->getPost('fullname'), $this->request->getPost('email'));
                 }
 
-                // Obtener asignación manual si se proporcionó
+                // Obtener el staff_id para asignación manual si se proporciona
                 $assignedStaffId = $this->request->getPost('assigned_staff_id');
                 $assignedStaffId = (!empty($assignedStaffId) && is_numeric($assignedStaffId)) ? (int)$assignedStaffId : null;
 
@@ -158,7 +158,7 @@ class Ticket extends BaseController
             $availableAgents = $staff->getAgentsByDepartment($department->id);
         }
 
-        return view('client/ticket_form', [
+        return view('client/ticket_form',[
             'error_msg' => isset($error_msg) ? $error_msg : null,
             'department' => $department,
             'validation' => $validation,
@@ -266,4 +266,43 @@ class Ticket extends BaseController
             'error_msg' => isset($error_msg) ? $error_msg : null,
         ]);
     }
+
+    public function getAgentsByDepartment($department_id)
+    {
+        // Validar que el departamento existe
+        if(!is_numeric($department_id) || $department_id <= 0){
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Invalid department ID']);
+        }
+        
+        // Verificar que el departamento existe
+        $departments = Services::departments();
+        if(!$departments->getByID($department_id)){
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Department not found']);
+        }
+        
+        // Verificar que la auto-asignación está desactivada
+        $settings = new \App\Libraries\Settings();
+        $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
+        if($autoAssignmentEnabled){
+            return $this->response->setStatusCode(400)->setJSON(['error' => 'Auto-assignment is enabled']);
+        }
+        
+        // Obtener agentes del departamento
+        $staff = Services::staff();
+        $agents = $staff->getAgentsByDepartment($department_id);
+        
+        // Formatear respuesta
+        $formattedAgents = [];
+        foreach($agents as $agent){
+            $formattedAgents[] = [
+                'id' => $agent['id'],
+                'fullname' => $agent['fullname'],
+                'username' => $agent['username'],
+                'display_name' => $agent['fullname'] . ' (' . $agent['username'] . ')'
+            ];
+        }
+        
+        return $this->response->setJSON(['agents' => $formattedAgents]);
+    }
+
 }

@@ -46,26 +46,23 @@ $this->section('content');
                     </label>
                     <input type="text" value="<?php echo $department->name;?>" class="form-control" readonly>
                 </div>
-
-                <?php if (!$autoAssignmentEnabled && !empty($availableAgents)): ?>
+                
+                <?php if (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled && !empty($availableAgents)): ?>
                     <div class="form-group">
-                        <label>
-                            <?php echo lang('Client.form.assignToAgent');?> <small class="text-muted">(<?php echo lang('Client.form.optional');?>)</small>
-                        </label>
+                        <label><?php echo lang('Admin.form.assignedAgent');?></label>
                         <select name="assigned_staff_id" class="form-control">
-                            <option value=""><?php echo lang('Client.form.selectAgent');?></option>
+                            <option value=""><?php echo lang('Admin.form.unassigned');?></option>
                             <?php foreach ($availableAgents as $agent): ?>
-                                <option value="<?php echo $agent->id;?>" <?php echo set_select('assigned_staff_id', $agent->id);?>>
-                                    <?php echo esc($agent->fullname);?>
+                                <option value="<?php echo $agent['id']; ?>">
+                                    <?php echo esc($agent['fullname']); ?> (<?php echo esc($agent['username']); ?>)
                                 </option>
-                            <?php endforeach;?>
+                            <?php endforeach; ?>
                         </select>
                         <small class="form-text text-muted">
-                            <?php echo lang('Client.form.assignToAgentHelp');?>
+                            Puedes asignar este ticket a un agente específico del departamento.
                         </small>
                     </div>
-                <?php endif;?>
-
+                <?php endif; ?>
                 <?php
                 if(isset($customFields)){
                     foreach ($customFields as $customField){
@@ -129,6 +126,15 @@ $this->section('script_block');
         $(function(){
             $(document).ready(function () {
                 bsCustomFileInput.init();
+                
+                // Funcionalidad para actualizar agentes cuando cambia el departamento
+                // Nota: Actualmente el departamento está en readonly, pero esta funcionalidad
+                // estará disponible si se cambia el comportamiento del formulario
+                <?php if (isset($autoAssignmentEnabled) && !$autoAssignmentEnabled): ?>
+                // JavaScript para actualizar dinámicamente la lista de agentes
+                // si en el futuro se permite cambiar el departamento
+                console.log('Auto-asignación desactivada: selector de agentes disponible');
+                <?php endif; ?>
             });
         })
     </script>
