@@ -46,6 +46,26 @@ $this->section('content');
                     </label>
                     <input type="text" value="<?php echo $department->name;?>" class="form-control" readonly>
                 </div>
+                
+                <?php if (!$autoAssignmentEnabled && !empty($availableAgents)): ?>
+                    <div class="form-group">
+                        <label>
+                            <?php echo lang('Client.form.assignToAgent');?> <small class="text-muted">(<?php echo lang('Client.form.optional');?>)</small>
+                        </label>
+                        <select name="assigned_staff_id" class="form-control">
+                            <option value=""><?php echo lang('Client.form.selectAgent');?></option>
+                            <?php foreach ($availableAgents as $agent): ?>
+                                <option value="<?php echo $agent->id;?>" <?php echo set_select('assigned_staff_id', $agent->id);?>>
+                                    <?php echo esc($agent->fullname);?>
+                                </option>
+                            <?php endforeach;?>
+                        </select>
+                        <small class="form-text text-muted">
+                            <?php echo lang('Client.form.assignToAgentHelp');?>
+                        </small>
+                    </div>
+                <?php endif;?>
+                
                 <?php
                 if(isset($customFields)){
                     foreach ($customFields as $customField){

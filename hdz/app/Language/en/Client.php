@@ -83,7 +83,11 @@ return [
         'closed' => 'Closed',
         'user' => 'User',
         'departments' => 'Departments',
-        'next' => 'Next'
+        'next' => 'Next',
+        'assignToAgent' => 'Assign to agent',
+        'optional' => 'optional',
+        'selectAgent' => 'Select an agent...',
+        'assignToAgentHelp' => 'You can optionally assign this ticket to a specific agent. If left blank, it will remain unassigned.'
     ],
     'error' => [
         'uploadFile' => 'There was an error uploading a file.',

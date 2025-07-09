@@ -460,4 +460,49 @@ class Staff
             ->where('staff_id', $staffId)
             ->delete();
     }
+    
+    /**
+     * Obtener agentes activos de un departamento específico
+     * 
+     * @param int $department_id ID del departamento
+     * @return array Lista de agentes del departamento
+     */
+    public function getStaffByDepartment($department_id)
+    {
+        $agents = $this->getAgents();
+        $departmentAgents = [];
+        
+        foreach ($agents as $agent) {
+            if ($agent->active == 1) { // Solo agentes activos
+                $agentDepartments = unserialize($agent->department);
+                if (is_array($agentDepartments) && in_array($department_id, $agentDepartments)) {
+                    $departmentAgents[] = $agent;
+                }
+            }
+        }
+        
+        return $departmentAgents;
+    }
+    
+    /**
+     * Validar si un agente pertenece a un departamento específico
+     * 
+     * @param int $staff_id ID del agente
+     * @param int $department_id ID del departamento
+     * @return bool True si el agente pertenece al departamento
+     */
+    public function validateStaffForDepartment($staff_id, $department_id)
+    {
+        if (empty($staff_id) || empty($department_id)) {
+            return false;
+        }
+        
+        $agent = $this->getRow(['id' => $staff_id, 'active' => 1]);
+        if (!$agent) {
+            return false;
+        }
+        
+        $agentDepartments = unserialize($agent->department);
+        return is_array($agentDepartments) && in_array($department_id, $agentDepartments);
+    }
 }

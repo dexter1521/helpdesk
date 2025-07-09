@@ -43,6 +43,18 @@ class Ticket extends BaseController
         }
 
         $tickets = new Tickets();
+        
+        // Verificar si auto-asignación está desactivada para mostrar dropdown de agentes
+        $settings = new \App\Libraries\Settings();
+        $autoAssignmentEnabled = ($settings->config('auto_assignment') == 1);
+        $availableAgents = [];
+        
+        if (!$autoAssignmentEnabled) {
+            // Obtener agentes del departamento para asignación manual
+            $staff = Services::staff();
+            $availableAgents = $staff->getStaffByDepartment($department_id);
+        }
+        
         $validation = Services::validation();
         $reCAPTCHA = new reCAPTCHA();
         if($this->request->getPost('do') == 'submit'){
@@ -118,7 +130,20 @@ class Ticket extends BaseController
                     $client_id = $this->client->getClientID($this->request->getPost('fullname'), $this->request->getPost('email'));
                 }
 
-                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $department->id);
+                // Obtener asignación manual si auto-asignación está desactivada
+                $manualStaffId = null;
+                if (!$autoAssignmentEnabled && $this->request->getPost('assigned_staff_id')) {
+                    $manualStaffId = (int)$this->request->getPost('assigned_staff_id');
+                    // Validar que el agente pertenezca al departamento
+                    $staffService = Services::staff();
+                    if ($staffService->validateStaffForDepartment($manualStaffId, $department->id)) {
+                        // Asignación manual válida
+                    } else {
+                        $manualStaffId = null; // Resetear si no es válido
+                    }
+                }
+
+                $ticket_id = $tickets->createTicket($client_id, $this->request->getPost('subject'), $department->id, 1, $manualStaffId);
                 //Custom field
                 $tickets->updateTicket([
                     'custom_vars' => serialize($customFieldList)
@@ -147,7 +172,9 @@ class Ticket extends BaseController
             'department' => $department,
             'validation' => $validation,
             'captcha' => $reCAPTCHA->display(),
-            'customFields' => $tickets->customFieldsFromDepartment($department->id)
+            'customFields' => $tickets->customFieldsFromDepartment($department->id),
+            'availableAgents' => $availableAgents, // Pasar agentes disponibles a la vista
+            'autoAssignmentEnabled' => $autoAssignmentEnabled // Pasar estado de auto-asignación a la vista
         ]);
     }
 
