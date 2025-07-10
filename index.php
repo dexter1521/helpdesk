@@ -12,6 +12,9 @@ define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 define('HDZ_PATH', FCPATH.'hdz'.DIRECTORY_SEPARATOR);
 define('HDZ_VERSION', '2.0.2');
 
+// Incluir autoload de Composer para dependencias externas
+require_once __DIR__ . '/vendor/autoload.php';
+
 /*
  *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION
