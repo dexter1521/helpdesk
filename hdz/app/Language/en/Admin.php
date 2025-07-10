@@ -10,7 +10,12 @@ return [
         'button' => 'Log In'
     ],
     'dashboard' => [
-        'menu' => 'Dashboard'
+        'menu' => 'Dashboard',
+        'title' => 'Tickets Dashboard',
+        'total' => 'Total Tickets',
+        'by_status' => 'By Status',
+        'by_department' => 'Tickets by Department',
+        'by_agent' => 'Tickets by Agent',
     ],
     'tickets' => [
         'menu' => 'Tickets',

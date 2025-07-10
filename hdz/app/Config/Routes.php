@@ -125,9 +125,12 @@ $routes->group(Helpdesk::STAFF_URI, [
         'filter' => 'staffAuth:login',
         'as' => 'staff_login'
     ]);
-    $routes->add('/',function (){
+    $routes->add('/', function () {
+        if (staff_data('admin') == 1) {
+            return redirect()->route('staff_dashboard_admin');
+        }
         return redirect()->route('staff_tickets');
-    },[
+    }, [
         'as' => 'staff_dashboard'
     ]);
     $routes->add('tickets', 'Staff\Tickets::manage/main',[
@@ -259,6 +262,9 @@ $routes->group(Helpdesk::STAFF_URI, [
     ]);
     $routes->add('tools/custom-fields/edit/(:num)', 'Staff\Tools::customFieldsEdit/$1',[
         'as' => 'staff_edit_custom_field'
+    ]);
+    $routes->add('dashboard', 'Staff\Dashboard::index', [
+        'as' => 'staff_dashboard_admin'
     ]);
 });
 

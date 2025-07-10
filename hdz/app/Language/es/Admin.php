@@ -10,7 +10,12 @@ return [
         'button' => 'Ingresar'
     ],
     'dashboard' => [
-        'menu' => 'Panel principal'
+        'menu' => 'Panel principal',
+        'title' => 'Dashboard de Tickets',
+        'total' => 'Total de Tickets',
+        'by_status' => 'Por Estado',
+        'by_department' => 'Tickets por Departamento',
+        'by_agent' => 'Tickets por Agente',
     ],
     'tickets' => [
         'menu' => 'Tickets',
@@ -40,7 +45,12 @@ return [
         'noteUpdated' => 'La nota ha sido actualizada.',
         'enterNote' => 'Ingresa tu nota.',
         'notesSaved' => 'Tu nota ha sido agregada.',
-        'addNote' => 'Agregar nota'
+        'addNote' => 'Agregar nota',
+        'status_open' => 'Abierto',
+        'status_answered' => 'Contestado',
+        'status_awaiting_reply' => 'En espera',
+        'status_in_progress' => 'En proceso',
+        'status_closed' => 'Cerrado',
     ],
     'account' => [
         'menu' => 'Cuenta',
@@ -368,5 +378,12 @@ return [
             'invalidCode' => 'Código de verificación invalido.',
             'invalidPassword' => 'Contraseña invalida.'
         ]
+    ],
+    'status' => [
+        'status_open' => 'Abierto',
+        'status_answered' => 'Contestado',
+        'status_awaiting_reply' => 'En espera',
+        'status_in_progress' => 'En proceso',
+        'status_closed' => 'Cerrado',
     ]
 ];

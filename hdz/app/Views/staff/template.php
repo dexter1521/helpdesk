@@ -60,6 +60,12 @@
             <div class="nav-wrapper">
                 <ul class="nav flex-column">
                     <li class="nav-item">
+                        <a class="nav-link <?php echo (uri_page() == 'dashboard' ? 'active' : ''); ?>" href="<?php echo site_url(route_to('staff_dashboard_admin')); ?>">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link <?php echo (uri_page() == 'tickets' ? 'active' : '');?>" href="<?php echo site_url(route_to('staff_tickets'));?>">
                             <i class="fas fa-headset"></i>
                             <span><?php echo lang('Admin.tickets.menu');?></span>
