@@ -126,10 +126,7 @@ $routes->group(Helpdesk::STAFF_URI, [
         'as' => 'staff_login'
     ]);
     $routes->add('/', function () {
-        if (staff_data('admin') == 1) {
-            return redirect()->route('staff_dashboard_admin');
-        }
-        return redirect()->route('staff_tickets');
+        return redirect()->route('staff_dashboard_admin');
     }, [
         'as' => 'staff_dashboard'
     ]);

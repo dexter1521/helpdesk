@@ -13,27 +13,43 @@ class Dashboard extends BaseController
     {
         $tickets = new Tickets();
         $db = \Config\Database::connect();
-        $builder = $db->table('tickets');
-        $total = $builder->countAllResults();
+        $staff = $this->staff;
+        $isAdmin = $staff->getData('admin') == 1;
+        $staffId = $staff->getData('id');
+        $departments = $staff->getData('department');
 
-        // Contar por estado
-        $statusCounts = [];
-        foreach ($tickets->statusList() as $statusId => $statusName) {
-            $statusCounts[$statusName] = $db->table('tickets')->where('status', $statusId)->countAllResults();
-        }
-
-        // Métricas por departamento
-        $departments = $db->table('departments')->select('id, name')->get()->getResult();
-        $ticketsByDept = [];
-        foreach ($departments as $dept) {
-            $ticketsByDept[$dept->name] = $db->table('tickets')->where('department_id', $dept->id)->countAllResults();
-        }
-
-        // Métricas por agente
-        $agents = $db->table('staff')->select('id, name')->get()->getResult();
-        $ticketsByAgent = [];
-        foreach ($agents as $agent) {
-            $ticketsByAgent[$agent->name] = $db->table('tickets')->where('staff_id', $agent->id)->countAllResults();
+        if ($isAdmin) {
+            // Admin: resumen global
+            $total = $db->table('tickets')->countAllResults();
+            $statusCounts = [];
+            foreach ($tickets->statusList() as $statusId => $statusName) {
+                $statusCounts[$statusName] = $db->table('tickets')->where('status', $statusId)->countAllResults();
+            }
+            $departmentsList = $db->table('departments')->select('id, name')->get()->getResult();
+            $ticketsByDept = [];
+            foreach ($departmentsList as $dept) {
+                $ticketsByDept[$dept->name] = $db->table('tickets')->where('department_id', $dept->id)->countAllResults();
+            }
+            $agents = $db->table('staff')->select('id, fullname')->get()->getResult();
+            $ticketsByAgent = [];
+            foreach ($agents as $agent) {
+                $ticketsByAgent[$agent->fullname] = $db->table('tickets')->where('staff_id', $agent->id)->countAllResults();
+            }
+        } else {
+            // Agente: solo sus tickets
+            $total = $db->table('tickets')->where('staff_id', $staffId)->countAllResults();
+            $statusCounts = [];
+            foreach ($tickets->statusList() as $statusId => $statusName) {
+                $statusCounts[$statusName] = $db->table('tickets')->where('staff_id', $staffId)->where('status', $statusId)->countAllResults();
+            }
+            $ticketsByDept = [];
+            if (is_array($departments)) {
+                foreach ($departments as $deptId) {
+                    $deptName = $db->table('departments')->select('name')->where('id', $deptId)->get()->getRow('name');
+                    $ticketsByDept[$deptName] = $db->table('tickets')->where('staff_id', $staffId)->where('department_id', $deptId)->countAllResults();
+                }
+            }
+            $ticketsByAgent = [ $staff->getData('fullname') => $total ];
         }
 
         return view('staff/dashboard', [
